@@ -1,0 +1,34 @@
+menu "I2C Master Bus"
+
+    config APP_I2C_BUS_SCL
+        int "SCL GPIO number"
+        default 4
+        help
+            GPIO number for I2C Master clock line.
+
+    config APP_I2C_BUS_SDA
+        int "SDA GPIO number"
+        default 5
+        help
+            GPIO number for I2C Master data line.
+
+    config APP_I2C_BUS_SCL_SPEED_HZ
+        int "Master frequency"
+        default 100000
+        help
+            Default SCL line frequency.
+
+    config APP_I2C_BUS_XFER_TIMEOUT_MS
+        int "Wait timeout ms"
+        default 50
+        help
+            Timeout period for ack response, when reading a device.
+
+    config APP_I2C_BUS_LOG_LEVEL
+        int "Log level override"
+        range -1 5
+        default -1
+        help
+            -1=use global, 0=NONE..5=VERBOSE
+
+endmenu

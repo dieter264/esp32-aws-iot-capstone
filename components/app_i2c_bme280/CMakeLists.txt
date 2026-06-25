@@ -1,0 +1,16 @@
+idf_component_register(
+    SRCS
+        "bme280.cpp"
+        "bme280_task.cpp"
+    INCLUDE_DIRS
+        "include"
+    PRIV_INCLUDE_DIRS
+        "private_include"
+    PRIV_REQUIRES
+        esp_driver_i2c
+        esp_timer
+        app_cmn
+        app_config_store
+        app_i2c_bus
+        app_state_machine
+)

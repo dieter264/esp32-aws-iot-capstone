@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP32 Configuration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            max-width: 720px;
+            line-height: 1.4;
+        }
+
+        h1 {
+            margin-bottom: 0.25rem;
+        }
+
+        .hint {
+            color: #555;
+            margin-bottom: 1.5rem;
+        }
+
+        .section {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1rem 1rem 0.5rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .row {
+            margin-bottom: 0.9rem;
+        }
+
+        .check-row label {
+            align-items: center;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            max-width: 420px;
+            padding: 0.5rem;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            max-width: 680px;
+            min-height: 12rem;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .buttons {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.65rem 1rem;
+            cursor: pointer;
+        }
+
+        #firmwareBox,
+        #statusBox {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            background: #f3f3f3;
+            white-space: pre-wrap;
+            line-height: 0.7;
+        }
+
+        #firmwareBox {
+            line-height: 0.4;
+        }
+
+        #firmwareBox>div,
+        #statusBox>div {
+            margin: 0.4rem 0;
+        }
+
+        #wifiStatus {
+            display: inline-block;
+            line-height: 1.4;
+            vertical-align: top;
+        }
+
+        .ok {
+            background: #e8f7e8 !important;
+        }
+
+        .err {
+            background: #fdeaea !important;
+        }
+
+        .small {
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ESP32 Configuration</h1>
+    <div class="hint">Configure Wi-Fi, OTA, MQTT, SNTP and device parameters.</div>
+
+    <div id="firmwareBox">
+        <h2>Firmware</h2>
+        <div><strong>Version:</strong> <span id="firmwareVersion">-</span></div>
+        <div><strong>Build date / time:</strong> <span id="firmwareBuild">-</span></div>
+        <div><strong>IDF target:</strong> <span id="firmwareTarget">-</span></div>
+        <div><strong>ESP-IDF:</strong> <span id="firmwareIdfVersion">-</span></div>
+    </div>
+
+    <div id="statusBox">
+        <h2>System Status</h2>
+        <div><strong>BME 280:</strong> <span id="bmeStatus">-</span></div>
+        <div><strong>WiFi:</strong> <span id="wifiStatus">-</span></div>
+        <div><strong>OTA:</strong> <span id="otaStatus">-</span></div>
+        <div><strong>MQTT:</strong> <span id="mqttStatus">-</span></div>
+        <div><strong>SNTP:</strong> <span id="sntpStatus">-</span></div>
+        <div><strong>STATUS:</strong> <span id="infoStatus">-</span></div>
+        <div><strong>LAST REFRESHED:</strong> <span id="lastRefreshed">-</span></div>
+    </div>
+
+    <form id="configForm" method="post" action="/config">
+        <div class="section">
+            <h2>Wi-Fi STA</h2>
+
+            <div class="row">
+                <label for="wifi_ssid">SSID</label>
+                <input id="wifi_ssid" name="wifi_ssid" type="text" maxlength="32" autocomplete="off">
+            </div>
+
+            <div class="row">
+                <label for="wifi_pass">Password</label>
+                <input id="wifi_pass" name="wifi_pass" type="password" maxlength="63" autocomplete="new-password">
+                <div class="small">Leave empty if you do not want to change the stored password.</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>OTA</h2>
+
+            <div class="row">
+                <label for="ota_url">Firmware URL</label>
+                <input id="ota_url" name="ota_url" type="text" maxlength="192" autocomplete="off"
+                    placeholder="https://192.168.1.10:8070/update/firmware.bin">
+                <div class="small">HTTPS URL used by the STA connection for OTA firmware download.</div>
+            </div>
+
+            <div class="row">
+                <label for="ota_server_cert">Server Certificate PEM</label>
+                <textarea id="ota_server_cert" name="ota_server_cert"
+                    placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"></textarea>
+                <div class="small">Paste the PEM certificate that the ESP32 should trust for the OTA server.</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>MQTT</h2>
+
+            <div class="row">
+                <label for="mqtt_uri">Broker URI</label>
+                <input id="mqtt_uri" name="mqtt_uri" type="text" maxlength="192" autocomplete="off"
+                    placeholder="mqtts://broker.example.com:8883">
+                <div class="small">MQTT broker URI used by the STA connection.</div>
+            </div>
+
+            <div class="row">
+                <label for="mqtt_broker_cert">Broker Certificate PEM</label>
+                <textarea id="mqtt_broker_cert" name="mqtt_broker_cert"
+                    placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"></textarea>
+                <div class="small">Paste the PEM certificate that the ESP32 should trust for the MQTT broker.</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>SNTP</h2>
+
+            <div class="row check-row">
+                <label for="sntp_enabled">
+                    <input name="sntp_enabled" type="hidden" value="0">
+                    <input id="sntp_enabled" name="sntp_enabled" type="checkbox" value="1">
+                    Enable SNTP time synchronization
+                </label>
+            </div>
+
+            <div class="row check-row">
+                <label for="sntp_server_from_dhcp">
+                    <input name="sntp_server_from_dhcp" type="hidden" value="0">
+                    <input id="sntp_server_from_dhcp" name="sntp_server_from_dhcp" type="checkbox" value="1">
+                    Use NTP server provided by DHCP
+                </label>
+            </div>
+
+            <div class="row">
+                <label for="sntp_static_server_1">NTP Server 1</label>
+                <input id="sntp_static_server_1" name="sntp_static_server_1" type="text" maxlength="63"
+                    autocomplete="off" placeholder="pool.ntp.org">
+                <div class="small">Static server used directly, or as fallback when DHCP NTP is enabled.</div>
+            </div>
+
+            <div class="row">
+                <label for="sntp_static_server_2">NTP Server 2</label>
+                <input id="sntp_static_server_2" name="sntp_static_server_2" type="text" maxlength="63"
+                    autocomplete="off" placeholder="time.google.com">
+                <div class="small">Optional second static server. Server 1 must be configured first.</div>
+            </div>
+
+        </div>
+
+        <div class="section">
+            <h2>BME280</h2>
+
+            <div class="row">
+                <label for="bme_addr">Device Address</label>
+                <select id="bme_addr" name="bme_addr">
+                    <option value="0">Auto-detect</option>
+                    <option value="118">0x76</option>
+                    <option value="119">0x77</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <label for="bme_osrs_t">Temperature Oversampling</label>
+                <select id="bme_osrs_t" name="bme_osrs_t">
+                    <option value="0">Skipped</option>
+                    <option value="1">x1</option>
+                    <option value="2">x2</option>
+                    <option value="3">x4</option>
+                    <option value="4">x8</option>
+                    <option value="5">x16</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <label for="bme_osrs_p">Pressure Oversampling</label>
+                <select id="bme_osrs_p" name="bme_osrs_p">
+                    <option value="0">Skipped</option>
+                    <option value="1">x1</option>
+                    <option value="2">x2</option>
+                    <option value="3">x4</option>
+                    <option value="4">x8</option>
+                    <option value="5">x16</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <label for="bme_osrs_h">Humidity Oversampling</label>
+                <select id="bme_osrs_h" name="bme_osrs_h">
+                    <option value="0">Skipped</option>
+                    <option value="1">x1</option>
+                    <option value="2">x2</option>
+                    <option value="3">x4</option>
+                    <option value="4">x8</option>
+                    <option value="5">x16</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button type="submit">Save Configuration</button>
+            <button type="button" id="reloadBtn">Reload Current Values</button>
+            <button type="button" id="otaBtn">Start OTA</button>
+        </div>
+    </form>
+
+    <script>
+        const RSSI_INVALID_DBM = -127;
+
+        function setText(id, value, cls = '') {
+            const el = document.getElementById(id);
+            if (!el || value === undefined || value === null) {
+                return;
+            }
+            el.textContent = value;
+            el.className = cls;
+        }
+
+        function setValue(id, value) {
+            const el = document.getElementById(id);
+            if (!el || value === undefined || value === null) {
+                return;
+            }
+            el.value = value;
+        }
+
+        function setChecked(id, value) {
+            const el = document.getElementById(id);
+            if (!el || value === undefined || value === null) {
+                return;
+            }
+            el.checked = value === true;
+        }
+
+        function updateSntpControls() {
+            const enabled = document.getElementById('sntp_enabled');
+            const dhcp = document.getElementById('sntp_server_from_dhcp');
+            const server1 = document.getElementById('sntp_static_server_1');
+            const server2 = document.getElementById('sntp_static_server_2');
+            if (!enabled || !dhcp || !server1 || !server2) {
+                return;
+            }
+
+            const isEnabled = enabled.checked;
+            dhcp.disabled = !isEnabled;
+            server1.readOnly = !isEnabled;
+            server2.readOnly = !isEnabled || server1.value.trim() === '';
+        }
+
+        function normalizeSntpStaticServers() {
+            const server1 = document.getElementById('sntp_static_server_1');
+            const server2 = document.getElementById('sntp_static_server_2');
+            if (!server1 || !server2) {
+                return;
+            }
+
+            if (server1.value.trim() === '') {
+                server2.value = '';
+            }
+        }
+
+        function formatUtcUs(utcUs) {
+            const us = Number(utcUs || 0);
+            if (!Number.isFinite(us) || us <= 0) {
+                return '';
+            }
+
+            return new Date(Math.floor(us / 1000)).toISOString()
+                .replace('T', ' ')
+                .replace(/\.\d{3}Z$/, ' UTC');
+        }
+
+        async function loadStatus() {
+            try {
+                setText('infoStatus', 'Loading current status...');
+
+                const response = await fetch('/status', {
+                    method: 'GET',
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) {
+                    const msg = await response.text();
+                    throw new Error('GET /status failed with HTTP ' + response.status + (msg ? ': ' + msg : ''));
+                }
+
+                const data = await response.json();
+
+                if (data.firmware) {
+                    setText('firmwareVersion', data.firmware.version);
+                    setText('firmwareBuild', data.firmware.build_date_time);
+                    setText('firmwareTarget', data.firmware.idf_target);
+                    setText('firmwareIdfVersion', data.firmware.esp_idf_version);
+                }
+
+                const ws = data.wifi_status;
+                const wifiText = ws
+                    ? [
+                        `connected=${ws.sta_connected}`,
+                        `rssi=${ws.rssi === RSSI_INVALID_DBM ? 'no signal' : `${ws.rssi} dBm`}`,
+                        ...(ws.sta_connected ? [`ssid=${ws.ssid}`] : []),
+                        `has_ip=${ws.sta_has_ip}`,
+                        ...(ws.sta_has_ip ? [`ip=${ws.sta_ip}`] : []),
+                        `last_error=${ws.last_error ?? '-'}`
+                    ].join('\n')
+                    : 'no data';
+                setText('wifiStatus', wifiText);
+
+                if (data.bme280_status) {
+                    const bme = data.bme280_status;
+                    const ok = Number(bme.last_error ?? -1) === 0;
+                    if (ok) {
+                        const temp = (Number(bme.temp_degCx100) / 100).toFixed(2);
+                        const press = (Number(bme.press_PaQ24d8) / 25600).toFixed(2);
+                        const hum = (Number(bme.hum_RhQ22d10) / 1024).toFixed(2);
+                        let text = `${temp} deg C, ${press} hPa, ${hum} %RH`;
+                        if (bme.sample_time_valid) {
+                            text += `, sampled at ${formatUtcUs(bme.sample_time_utc_us)}`;
+                        } else {
+                            text += `, sample time not synchronized`;
+                        }
+                        setText('bmeStatus', text, 'ok');
+                    } else {
+                        setText('bmeStatus', 'no valid reading, last_error=' + (bme.last_error ?? '-'), 'err');
+                    }
+                }
+
+                if (data.ota_status) {
+                    switch (data.ota_status.state) {
+                        case 'IDLE':
+                            setText('otaStatus', 'idle');
+                            break;
+                        case 'REQUESTED':
+                            setText('otaStatus', 'requested');
+                            break;
+                        case 'RUNNING':
+                            setText('otaStatus', 'running');
+                            break;
+                        case 'FAILED':
+                            setText('otaStatus', 'failed: ' + (data.ota_status.last_error || 'unknown'), 'err');
+                            break;
+                        case 'RESTART_PENDING':
+                            setText('otaStatus', 'successful, reboot pending', 'ok');
+                            break;
+                        default:
+                            setText('otaStatus', 'unknown');
+                            break;
+                    }
+                }
+
+                if (data.mqtt_status) {
+                    const mqttState = data.mqtt_status.state || 'UNKNOWN';
+                    setText('mqttStatus', mqttState.toLowerCase().replace('_', ' '),
+                        mqttState === 'CONNECTED' || mqttState === 'PUBLISHED' ? 'ok' :
+                            mqttState === 'ERROR' ? 'err' : '');
+                }
+
+                if (data.sntp_status) {
+                    const sntpState = data.sntp_status.state || 'UNKNOWN';
+                    const timeValid = data.sntp_status.is_time_valid === true;
+                    const lastError = data.sntp_status.last_error ?? 'ESP_OK';
+                    const hasError = !(lastError === 0 || lastError === '0' || lastError === 'ESP_OK');
+                    const lastSync = formatUtcUs(data.sntp_status.last_sync_utc_us);
+
+                    if (timeValid && !hasError && lastSync) {
+                        setText('sntpStatus', 'time valid, last sync ' + lastSync, 'ok');
+                    } else if (sntpState === 'NOT_CONFIGURED') {
+                        setText('sntpStatus', 'not configured');
+                    } else if (sntpState === 'INITIALIZED') {
+                        setText('sntpStatus', 'initialized, waiting for Wi-Fi/IP');
+                    } else if (sntpState === 'ERROR' || hasError) {
+                        setText('sntpStatus', 'last error=' + lastError, 'err');
+                    } else {
+                        setText('sntpStatus', sntpState.toLowerCase().replace('_', ' ') + ', time not valid');
+                    }
+                }
+
+                setText('infoStatus', 'Current status loaded', 'ok');
+                setText('lastRefreshed', new Date().toLocaleString(), 'ok');
+
+                if (data.wifi) {
+                    setValue('wifi_ssid', data.wifi.ssid);
+                }
+
+                if (data.ota) {
+                    setValue('ota_url', data.ota.url);
+                    setValue('ota_server_cert', data.ota.server_cert);
+                }
+
+                if (data.mqtt) {
+                    setValue('mqtt_uri', data.mqtt.uri);
+                    setValue('mqtt_broker_cert', data.mqtt.broker_cert);
+                }
+
+                if (data.sntp) {
+                    setChecked('sntp_enabled', data.sntp.sntp_enabled);
+                    setChecked('sntp_server_from_dhcp', data.sntp.server_from_dhcp);
+                    setValue('sntp_static_server_1', data.sntp.static_server_1);
+                    setValue('sntp_static_server_2', data.sntp.static_server_2);
+                    updateSntpControls();
+                }
+
+                if (data.bme280) {
+                    setValue('bme_addr', data.bme280.device_address);
+                    setValue('bme_osrs_t', data.bme280.osrs_t);
+                    setValue('bme_osrs_p', data.bme280.osrs_p);
+                    setValue('bme_osrs_h', data.bme280.osrs_h);
+                }
+            }
+            catch (err) {
+                setText('infoStatus', 'Failed to load /status: ' + err.message, 'err');
+            }
+        }
+
+        async function startOTA() {
+            try {
+                setText('otaStatus', 'Starting OTA...', '');
+
+                const params = new URLSearchParams();
+                params.append('ota_url', document.getElementById('ota_url').value);
+                params.append('ota_server_cert', document.getElementById('ota_server_cert').value);
+
+                const response = await fetch('/ota/start', {
+                    method: 'POST',
+                    body: params,
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) {
+                    const msg = await response.text();
+                    throw new Error('POST /ota/start failed with HTTP ' + response.status + (msg ? ': ' + msg : ''));
+                }
+
+                const data = await response.json();
+                setText('otaStatus', data.message || 'OTA requested', 'ok');
+                window.location.assign('/config');
+            }
+            catch (err) {
+                setText('otaStatus', 'Failed to start OTA: ' + err.message, 'err');
+            }
+        }
+
+        document.getElementById('configForm').addEventListener('submit', function () {
+            normalizeSntpStaticServers();
+            setText('infoStatus', 'Submitting configuration...', '');
+        });
+
+        document.getElementById('sntp_enabled').addEventListener('change', function () {
+            const enabled = document.getElementById('sntp_enabled');
+            const dhcp = document.getElementById('sntp_server_from_dhcp');
+            if (enabled && dhcp && enabled.checked) {
+                dhcp.checked = true;
+            }
+            updateSntpControls();
+        });
+
+        document.getElementById('sntp_static_server_1').addEventListener('input', updateSntpControls);
+
+        document.getElementById('reloadBtn').addEventListener('click', loadStatus);
+        document.getElementById('otaBtn').addEventListener('click', startOTA);
+
+        window.addEventListener('load', function () {
+            updateSntpControls();
+            loadStatus();
+        });
+    </script>
+</body>
+
+</html>

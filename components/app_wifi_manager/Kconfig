@@ -1,0 +1,31 @@
+menu "Wifi Manager"
+
+    config APP_WM_AP_SSID
+        string "WiFi AP ssid"
+        default "esp-ssid"
+        help
+            SSID of the AP a client can connect to.
+            Must be 1..32 chars.
+
+    config APP_WM_AP_PASSWD
+        string "WiFi AP password"
+        default "password$1"
+        help
+            Password of the AP a client can connect to.
+            Must be 8..63 chars.
+
+        config APP_WM_AP_CHANNEL
+            int "WiFi AP channel"
+            range 1 14
+            default 1
+            help
+                WiFi channel (network channel) of the AP  a client can connect to.
+
+    config APP_WM_LOG_LEVEL
+        int "Log level override"
+        range -1 5
+        default -1
+        help
+            -1=use global, 0=NONE..5=VERBOSE
+
+endmenu

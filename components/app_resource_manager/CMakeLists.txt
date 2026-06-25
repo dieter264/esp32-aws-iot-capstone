@@ -1,0 +1,11 @@
+idf_component_register(
+    SRCS 
+        "resource_manager.cpp"
+    INCLUDE_DIRS
+        "include"               
+    PRIV_REQUIRES 
+        app_cmn 
+        nvs_flash 
+        esp_netif
+        esp_event
+)

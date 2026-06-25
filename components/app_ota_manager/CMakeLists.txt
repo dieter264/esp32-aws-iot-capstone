@@ -1,0 +1,16 @@
+idf_component_register(
+    SRCS 
+        "ota_manager.cpp" 
+        "ota_mgr_task.cpp"
+    INCLUDE_DIRS
+        "include"
+    PRIV_INCLUDE_DIRS
+        "private_include"
+    PRIV_REQUIRES
+        bootloader_support
+        esp_event
+        esp_https_ota
+        app_cmn
+        app_config_store
+        app_state_machine
+)
