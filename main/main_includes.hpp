@@ -5,9 +5,8 @@
 #include "app/cfg/config_store.hpp"
 #include "app/cfg/firmware.hpp"
 #include "app/cmn/log.hpp"
+#include "app/device/device_manager.hpp"
 #include "app/https/https_server.hpp"
-#include "app/i2c/bme280.hpp"
-#include "app/i2c/bus.hpp"
 #include "app/mqtt/mqtt_client.hpp"
 #include "app/ota/ota_manager.hpp"
 #include "app/rm/resource_manager.hpp"
@@ -26,9 +25,8 @@ constexpr EventBits_t TASK_WAIT_BIT_MASK =
     TaskWakeBit::RESTART_REQUEST;
 
 extern app::cfg::ConfigStore *cfgStore;
+extern app::dm::DeviceManager *deviceManager;
 extern app::https::HttpsServer *httpsServer;
-extern app::i2c::bme280::Bme280 *bme280;
-extern app::i2c::bus::I2cBus *i2cBus;
 extern app::mqtt::MqttClient *mqttClient;
 extern app::ota::OtaManager *otaManager;
 extern app::rm::ResourceManager *rscManager;

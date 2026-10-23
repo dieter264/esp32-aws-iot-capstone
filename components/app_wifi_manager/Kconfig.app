@@ -14,12 +14,12 @@ menu "Wifi Manager"
             Password of the AP a client can connect to.
             Must be 8..63 chars.
 
-        config APP_WM_AP_CHANNEL
-            int "WiFi AP channel"
-            range 1 14
-            default 1
-            help
-                WiFi channel (network channel) of the AP  a client can connect to.
+    config APP_WM_AP_CHANNEL
+        int "WiFi AP channel"
+        range 1 14
+        default 1
+        help
+            WiFi channel (network channel) of the AP  a client can connect to.
 
     config APP_WM_LOG_LEVEL
         int "Log level override"

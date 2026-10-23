@@ -134,7 +134,7 @@ namespace app::sntp
                     .state            = SntpState::SYNCED,
                     .is_time_valid    = true,
                     .last_sync_utc_us = syncUtcUs,
-                    .last_error       = ESP_OK,
+                    .error_status     = ESP_OK,
                 };
 
                 stateMachine_.updateSntpStatus(

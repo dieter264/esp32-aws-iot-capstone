@@ -1,4 +1,11 @@
-idf_component_register(SRCS "bus.cpp"
-                       INCLUDE_DIRS "include"
-                       REQUIRES app_cmn esp_driver_i2c
-                       PRIV_REQUIRES app_config_store)
+idf_component_register(
+    SRCS
+        "i2c_bus.cpp"
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+        app_cmn
+    PRIV_REQUIRES
+        esp_driver_i2c
+        app_config_store
+)

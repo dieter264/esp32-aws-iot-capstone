@@ -66,7 +66,7 @@ namespace app::i2c::bme280
 
     void Bme280::State::runTask()
     {
-        constexpr uint32_t TASK_WAIT_TIMEOUT_MS = 10000UL;
+        const uint32_t TASK_WAIT_TIMEOUT_MS = initialCfg_.probe_interval_ms;
 
         for (;;)
         {
@@ -97,21 +97,24 @@ namespace app::i2c::bme280
             stateMachine_.updateBme280Status(
                 [this, isTimeValid, sampleTimeUtcUs, ret](auto &bme280Status)
                 {
-                    bme280Status.sample_time_utc_us = sampleTimeUtcUs;
-                    bme280Status.sample_time_valid  = isTimeValid;
-                    bme280Status.last_error         = ret;
+                    bme280Status.error_status = ret;
 
                     if (ESP_OK == ret)
                     {
-                        bme280Status.data = this->bme280Data_;
+                        bme280Status.data               = this->bme280Data_;
+                        bme280Status.sample_time_utc_us = sampleTimeUtcUs;
+                        bme280Status.sample_time_valid  = isTimeValid;
                     }
                 });
 
-            if (ESP_OK == ret)
-            {
-                stateMachine_.postEvent(app::sm::APP_EVENT, app::sm::APP_EVENT_BME280_DATA_READY);
-            }
+            stateMachine_.postEvent(app::sm::APP_EVENT, app::sm::APP_EVENT_BME280_DATA_READY);
         }
+
+        stateMachine_.updateBme280Status(
+            [](auto &status)
+            {
+                status = {};
+            });
 
         xEventGroupSetBits(eventGroup_, TaskWakeBit::STOP_ACK);
         vTaskDelete(nullptr);
@@ -205,10 +208,10 @@ namespace app::i2c::bme280
 
         bme280Data_.hum_RhQ22d10 = static_cast<uint32_t>(varh >> 12);
 
-        ESP_LOGD(TAG, "BME280 data:\n"
-                      "  degC= %4d.%02d\n"
-                      "  hPa = %4d.%02d\n"
-                      "   RH = %4d.%02d%%",
+        ESP_LOGI(TAG, "BME280 data:\n"
+                      "  degC=%4d.%02d\n"
+                      "  hPa =%4d.%02d\n"
+                      "   RH =%4d.%02d%%",
                  bme280Data_.temp_degCx100 / 100, abs(bme280Data_.temp_degCx100) % 100,
                  (bme280Data_.press_PaQ24d8 >> 8) / 100, (bme280Data_.press_PaQ24d8 >> 8) % 100,
                  bme280Data_.hum_RhQ22d10 >> 10, ((bme280Data_.hum_RhQ22d10 & 0x3ff) * 100) >> 10);

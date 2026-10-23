@@ -1,8 +1,9 @@
+#include <string>
 #include "esp_check.h"
 #include "driver/i2c_master.h"
 #include "app/cmn/log.hpp"
 #include "app/cfg/config_store.hpp"
-#include "app/i2c/bus.hpp"
+#include "app/i2c/i2c_bus.hpp"
 
 namespace app::i2c::bus
 {
@@ -21,11 +22,19 @@ namespace app::i2c::bus
 
     struct I2cBus::State
     {
-        i2c_master_bus_handle_t busHandle = nullptr;
+        explicit State(const app::cfg::ConfigStore &cfgStore)
+            : cfgStore_(cfgStore) {}
+
+        bool isInitialized_ = false;
+        I2cBusConfig initialCfg_{};
+
+        const app::cfg::ConfigStore &cfgStore_;
+
+        i2c_master_bus_handle_t busHandle{};
     };
 
-    I2cBus::I2cBus(const app::cfg::DeviceID devID, const app::cfg::ConfigStore &store)
-        : devID_(devID), cfgStore_(store), state_(std::make_unique<State>()) {}
+    I2cBus::I2cBus(const app::cfg::ConfigStore &store)
+        : state_(std::make_unique<State>(store)) {}
 
     I2cBus::~I2cBus()
     {
@@ -34,16 +43,15 @@ namespace app::i2c::bus
 
     esp_err_t I2cBus::init()
     {
-        if (isInitialized_) return ESP_OK;
+        if (state_->isInitialized_) return ESP_OK;
 
-        ESP_RETURN_ON_FALSE(cfgStore_.isInitialized(), ESP_ERR_INVALID_STATE,
+        ESP_RETURN_ON_FALSE(state_->cfgStore_.isInitialized(), ESP_ERR_INVALID_STATE,
                             TAG, "Config Store not initialized");
 
-        app::i2c::bus::I2cBusConfig i2cBusCfg{};
-        cfgStore_.getI2cBusConfig(i2cBusCfg);
+        state_->cfgStore_.getI2cBusConfig(state_->initialCfg_);
 
         i2c_master_bus_config_t mBusConfig = {
-            .i2c_port          = static_cast<i2c_port_num_t>(i2cBusCfg.i2c_port_num),
+            .i2c_port          = static_cast<i2c_port_num_t>(state_->initialCfg_.i2c_port_num),
             .sda_io_num        = SDA_IO_PIN,
             .scl_io_num        = SCL_IO_PIN,
             .clk_source        = I2C_CLK_SRC_DEFAULT,
@@ -67,7 +75,7 @@ namespace app::i2c::bus
             return ret;
         }
 
-        isInitialized_ = true;
+        state_->isInitialized_ = true;
         ESP_LOGD(TAG, "I2C bus initialized");
         return ret;
     }
@@ -80,8 +88,8 @@ namespace app::i2c::bus
             state_->busHandle = nullptr;
         }
 
-        if (!isInitialized_) return;
-        isInitialized_ = false;
+        if (!state_->isInitialized_) return;
+        state_->isInitialized_ = false;
         ESP_LOGD(TAG, "I2C bus finalized");
     }
 
@@ -96,21 +104,26 @@ namespace app::i2c::bus
 
     bool I2cBus::isInitialized() const
     {
-        return isInitialized_;
+        return state_->isInitialized_;
+    }
+
+    bool I2cBus::hasConfigChanged() const
+    {
+        I2cBusConfig cfg{};
+        state_->cfgStore_.getI2cBusConfig(cfg);
+
+        return (cfg != state_->initialCfg_);
     }
 
     esp_err_t I2cBus::getDevAddressForChipID(uint8_t chipID, uint8_t regAddress,
                                              uint16_t &devAddress)
     {
-        ESP_RETURN_ON_FALSE(isInitialized_, ESP_ERR_INVALID_STATE,
+        ESP_RETURN_ON_FALSE(state_->isInitialized_, ESP_ERR_INVALID_STATE,
                             TAG, "I2C bus not initialized");
-
-        app::i2c::bus::I2cBusConfig i2cBusCfg{};
-        cfgStore_.getI2cBusConfig(i2cBusCfg);
 
         esp_err_t ret                     = ESP_FAIL;
         i2c_device_config_t devConf       = {};
-        devConf.scl_speed_hz              = i2cBusCfg.scl_speed_hz;
+        devConf.scl_speed_hz              = state_->initialCfg_.scl_speed_hz;
         i2c_master_dev_handle_t devHandle = {};
 
         const uint16_t preferredAddr = devAddress;
@@ -137,7 +150,7 @@ namespace app::i2c::bus
                 uint8_t id = 0;
 
                 ret = i2c_master_transmit_receive(devHandle, &regAddress, 1, &id,
-                                                  1, i2cBusCfg.xfer_timeout_ms);
+                                                  1, state_->initialCfg_.xfer_timeout_ms);
 
                 if ((ESP_OK == ret) && (chipID == id))
                 {
@@ -187,5 +200,35 @@ namespace app::i2c::bus
         }
 
         return ret;
+    }
+
+    void I2cBus::logConnectedDevices()
+    {
+        ESP_RETURN_VOID_ON_FALSE(state_->isInitialized_, ESP_ERR_INVALID_STATE,
+                                 TAG, "I2C bus not initialized");
+
+        std::string logMsg;
+        logMsg.reserve(128);
+
+        for (uint8_t addr = 0x08; addr <= 0x77; ++addr)
+        {
+            const esp_err_t ret = i2c_master_probe(state_->busHandle, addr, 50);
+
+            if (ESP_OK == ret)
+            {
+                char buf[8];
+                snprintf(buf, sizeof(buf), " 0x%02X |", addr);
+                logMsg.append(buf);
+            }
+            else if (ESP_ERR_NOT_FOUND != ret)
+            {
+                ESP_LOGE(TAG, "I2C probe failed at 0x%02X with %s",
+                         addr, esp_err_to_name(ret));
+                return;
+            }
+        }
+
+        ESP_LOGI(TAG, "Connected I2C devices:%s",
+                 logMsg.empty() ? " none" : logMsg.c_str());
     }
 }

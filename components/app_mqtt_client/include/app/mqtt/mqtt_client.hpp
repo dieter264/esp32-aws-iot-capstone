@@ -15,12 +15,13 @@ namespace app::sm
 
 namespace app::mqtt
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /**
      * Owns the TLS MQTT client and event-driven worker task.
-     * Publishes valid BME280 samples on APP_EVENT_BME280_DATA_READY even when
-     * their UTC timestamp is invalid. Dependencies are non-owning.
+     * Publishes valid BME280 and DS18B20 samples on their data-ready events,
+     * even when their UTC timestamps are invalid. Dependencies are non-owning.
      */
     class MqttClient
     {
@@ -41,8 +42,10 @@ namespace app::mqtt
          */
         void fini();
 
+        /** Restarts the client using the latest configuration. */
         esp_err_t reset();
 
+        /** Returns whether initialization completed successfully. */
         bool isInitialized() const;
 
     private:

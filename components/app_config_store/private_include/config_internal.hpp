@@ -41,14 +41,14 @@ namespace app::cfg
         static constexpr uint16_t VERSION = 1U;
         PersistentCfgHdr hdr{};
 
-        app::i2c::bus::I2cBusConfig i2cBus{};
         app::i2c::bme280::Bme280Config bme280{};
-        app::wm::WifiManagerApConfig wifiMgrAP{};
         app::wm::WifiManagerStaConfig wifiMgrSta{};
-        app::https::HttpsServerConfig httpsSrv{};
         PersistentOtaManagerConfig otaMgr{};
         PersistentMqttClientConfig mqttClt{};
         app::sntp::SntpClientConfig sntpClt{};
+        app::dm::DeviceManagerConfig deviceMgr{};
+        app::onewire::ds18b20::Ds18b20Config ds18b20{};
+        app::modbus::tl136::Tl136Config tl136{};
     };
 
     struct NvsHandleGuard
@@ -71,9 +71,15 @@ namespace app::cfg
         app::cmn::Mutex mutexUpdate_;
         mutable app::cmn::Mutex mutexCache_;
 
-        void initWifiMgrApConfig();
+        void initWifiManagerApConfig();
         void initHttpsServerConfig();
         void initSntpClientConfig();
+        void initDeviceManagerConfig();
+        void initBme280Config();
+        void initOneWireBusConfig();
+        void initDs18b20Config();
+        void initModbusBusConfig();
+        void initTl136Config();
 
         esp_err_t readNvs();
         esp_err_t updateNvs(const AppConfig &);

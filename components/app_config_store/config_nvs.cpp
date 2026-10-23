@@ -44,12 +44,12 @@ namespace app::cfg
         ESP_LOGD(TAG, "Valid entry found in NVS: key=%s, version=%u, size=%u",
                  NVS_KEY, blob.hdr.version, blob.hdr.totalSize);
 
-        appConfig_.i2cBus     = blob.i2cBus;
         appConfig_.bme280     = blob.bme280;
-        appConfig_.wifiMgrAP  = blob.wifiMgrAP;
         appConfig_.wifiMgrSta = blob.wifiMgrSta;
-        appConfig_.httpsSrv   = blob.httpsSrv;
         appConfig_.sntpClt    = blob.sntpClt;
+        appConfig_.deviceMgr  = blob.deviceMgr;
+        appConfig_.ds18b20    = blob.ds18b20;
+        appConfig_.tl136      = blob.tl136;
         cstrCopy(appConfig_.otaMgr.url, blob.otaMgr.url);
         appConfig_.otaMgr.server_cert = blob.otaMgr.server_cert;
         cstrCopy(appConfig_.mqttClt.uri, blob.mqttClt.uri);
@@ -69,12 +69,12 @@ namespace app::cfg
                             "No memory for PersistentCfgV1");
         auto &blob = *heapBlob;
 
-        blob.i2cBus     = appCfg.i2cBus;
         blob.bme280     = appCfg.bme280;
-        blob.wifiMgrAP  = appCfg.wifiMgrAP;
         blob.wifiMgrSta = appCfg.wifiMgrSta;
-        blob.httpsSrv   = appCfg.httpsSrv;
         blob.sntpClt    = appCfg.sntpClt;
+        blob.deviceMgr  = appCfg.deviceMgr;
+        blob.ds18b20    = appCfg.ds18b20;
+        blob.tl136      = appCfg.tl136;
         cstrCopy(blob.otaMgr.url, appCfg.otaMgr.url);
         cstrCopy(blob.otaMgr.server_cert, appCfg.otaMgr.server_cert.c_str());
         cstrCopy(blob.mqttClt.uri, appCfg.mqttClt.uri);

@@ -53,17 +53,50 @@ namespace app::https
         bool sntpStaticServer2Present                            = false;
         char sntpStaticServer2[app::sntp::SNTP_SERVER_NAME_SIZE] = {};
 
-        bool bmeAddrPresent = false;
-        uint16_t bmeAddr    = 0;
+        bool bme280EnabledPresent = false;
+        bool bme280Enabled        = false;
 
-        bool bmeOsrsTPresent = false;
-        uint8_t bmeOsrsT     = 0;
+        bool ds18b20EnabledPresent = false;
+        bool ds18b20Enabled        = false;
 
-        bool bmeOsrsPPresent = false;
-        uint8_t bmeOsrsP     = 0;
+        bool tl136EnabledPresent = false;
+        bool tl136Enabled        = false;
 
-        bool bmeOsrsHPresent = false;
-        uint8_t bmeOsrsH     = 0;
+        bool bme280AddrPresent = false;
+        uint16_t bme280Addr    = 0;
+
+        bool bme280ProbeIntervalPresent = false;
+        uint32_t bme280ProbeIntervalMs  = 0;
+
+        bool bme280OsrsTPresent = false;
+        uint8_t bme280OsrsT     = 0;
+
+        bool bme280OsrsPPresent = false;
+        uint8_t bme280OsrsP     = 0;
+
+        bool bme280OsrsHPresent = false;
+        uint8_t bme280OsrsH     = 0;
+
+        bool ds18b20AddressPresent = false;
+        uint64_t ds18b20Address    = 0;
+
+        bool ds18b20ProbeIntervalPresent = false;
+        uint32_t ds18b20ProbeIntervalMs  = 0;
+
+        bool tl136AiConverterAddressPresent = false;
+        uint8_t tl136AiConverterAddress      = 0;
+
+        bool tl136AiConverterChannelPresent = false;
+        uint8_t tl136AiConverterChannel      = 0;
+
+        bool tl136AiConverterCalibrationPresent = false;
+        uint16_t tl136AiConverterCalibration    = 0;
+
+        bool tl136ProbeIntervalPresent = false;
+        uint32_t tl136ProbeIntervalMs  = 0;
+
+        bool tl136FullScaleWaterLevelPresent = false;
+        uint16_t tl136FullScaleWaterLevelMm  = 0;
     };
 
     esp_err_t readRequestBody(httpd_req_t *, char *buf);

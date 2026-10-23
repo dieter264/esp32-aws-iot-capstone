@@ -19,8 +19,8 @@ namespace app::sntp
             stateMachine_.updateSntpStatus(
                 [ret](auto &status)
                 {
-                    status.state      = app::sntp::SntpState::ERROR;
-                    status.last_error = ret;
+                    status.state        = app::sntp::SntpState::ERROR;
+                    status.error_status = ret;
                 });
 
             retryStartPending_ = true;
@@ -33,8 +33,8 @@ namespace app::sntp
         stateMachine_.updateSntpStatus(
             [](auto &status)
             {
-                status.state      = app::sntp::SntpState::STARTED;
-                status.last_error = ESP_OK;
+                status.state        = app::sntp::SntpState::STARTED;
+                status.error_status = ESP_OK;
             });
     }
 
@@ -91,8 +91,8 @@ namespace app::sntp
             stateMachine_.updateSntpStatus(
                 [ret](auto &status)
                 {
-                    status.state      = app::sntp::SntpState::ERROR;
-                    status.last_error = ret;
+                    status.state        = app::sntp::SntpState::ERROR;
+                    status.error_status = ret;
                 });
 
             return;
@@ -103,8 +103,8 @@ namespace app::sntp
         stateMachine_.updateSntpStatus(
             [](auto &status)
             {
-                status.state      = app::sntp::SntpState::INITIALIZED;
-                status.last_error = ESP_OK;
+                status.state        = app::sntp::SntpState::INITIALIZED;
+                status.error_status = ESP_OK;
             });
 
         app::wm::WifiStatus wifiStatus{};

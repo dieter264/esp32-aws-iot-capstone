@@ -203,13 +203,13 @@ namespace app::ota
         }
     }
 
-    void OtaManager::State::setOtaStatus(OtaState otaState, esp_err_t last_error)
+    void OtaManager::State::setOtaStatus(OtaState otaState, esp_err_t error_status)
     {
         stateMachine_.updateOtaStatus(
-            [otaState, last_error](auto &otaStatus)
+            [otaState, error_status](auto &otaStatus)
             {
-                otaStatus.state      = otaState;
-                otaStatus.last_error = last_error;
+                otaStatus.state        = otaState;
+                otaStatus.error_status = error_status;
             });
     }
 }

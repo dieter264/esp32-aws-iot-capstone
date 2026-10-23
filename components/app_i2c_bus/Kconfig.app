@@ -1,4 +1,4 @@
-menu "I2C Master Bus"
+menu "I2C Bus"
 
     config APP_I2C_BUS_SCL
         int "SCL GPIO number"

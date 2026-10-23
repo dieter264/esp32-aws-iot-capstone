@@ -1,3 +1,10 @@
-idf_component_register(SRCS "state_machine.cpp"
-                       INCLUDE_DIRS "include" 
-                       REQUIRES app_cmn)
+idf_component_register(
+    SRCS
+        "state_machine.cpp"
+    INCLUDE_DIRS
+        "include"
+    PRIV_REQUIRES
+        esp_event
+    REQUIRES
+        app_cmn
+)

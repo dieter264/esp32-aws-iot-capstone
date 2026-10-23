@@ -19,9 +19,8 @@ void setAppLogging()
 {
     esp_log_level_set("*", APP_LOG_GLOBAL_LEVEL);
     app::cfg::apply_log_level();
+    app::dm::apply_log_level();
     app::https::apply_log_level();
-    app::i2c::bme280::apply_log_level();
-    app::i2c::bus::apply_log_level();
     app::mqtt::apply_log_level();
     app::ota::apply_log_level();
     app::rm::apply_log_level();

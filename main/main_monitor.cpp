@@ -1,9 +1,8 @@
 #include "main_includes.hpp"
 
 app::cfg::ConfigStore *cfgStore{};
+app::dm::DeviceManager *deviceManager{};
 app::https::HttpsServer *httpsServer{};
-app::i2c::bme280::Bme280 *bme280{};
-app::i2c::bus::I2cBus *i2cBus{};
 app::mqtt::MqttClient *mqttClient{};
 app::ota::OtaManager *otaManager{};
 app::rm::ResourceManager *rscManager{};
@@ -58,39 +57,6 @@ esp_err_t createAndInitComponentCfgSm(T *&t, const char *tName)
     return checkAndInitComponent(t, tName);
 }
 
-esp_err_t createAndInitI2CBus()
-{
-    if (nullptr != i2cBus)
-        return ESP_OK;
-
-    if (nullptr == cfgStore || !cfgStore->isInitialized())
-    {
-        ESP_LOGE(TAG, "Config Store missing for 'I2C Bus'");
-        return ESP_ERR_INVALID_STATE;
-    }
-
-    i2cBus = new app::i2c::bus::I2cBus(app::cfg::DeviceID::I2C_BUS, *cfgStore);
-    return checkAndInitComponent(i2cBus, "I2C Bus");
-}
-
-esp_err_t createAndInitBme280()
-{
-
-    if (nullptr != bme280)
-        return ESP_OK;
-
-    if (nullptr == cfgStore || !cfgStore->isInitialized() ||
-        nullptr == stateMachine || !stateMachine->isInitialized() ||
-        nullptr == i2cBus || !i2cBus->isInitialized())
-    {
-        ESP_LOGE(TAG, "Config Store or I2C Bus missing for 'BME280'");
-        return ESP_ERR_INVALID_STATE;
-    }
-
-    bme280 = new app::i2c::bme280::Bme280(app::cfg::DeviceID::I2C_BME280, *cfgStore, *stateMachine, *i2cBus);
-    return checkAndInitComponent(bme280, "BME280");
-}
-
 esp_err_t createAndInitComponents()
 {
     logTaskStackAndHeap();
@@ -103,8 +69,7 @@ esp_err_t createAndInitComponents()
     ESP_RETURN_ON_ERROR(createAndInitComponentCfgSm(httpsServer, "HTTPS Server"), TAG, "");
     ESP_RETURN_ON_ERROR(createAndInitComponentCfgSm(otaManager, "OTA Manager"), TAG, "");
     ESP_RETURN_ON_ERROR(createAndInitComponentCfgSm(mqttClient, "MQTT Client"), TAG, "");
-    ESP_RETURN_ON_ERROR(createAndInitI2CBus(), TAG, "");
-    ESP_RETURN_ON_ERROR(createAndInitBme280(), TAG, "");
+    ESP_RETURN_ON_ERROR(createAndInitComponentCfgSm(deviceManager, "Device Manager"), TAG, "");
 
     return ESP_OK;
 }
@@ -149,8 +114,7 @@ void monitorComponents()
     monitorComponent(httpsServer);
     monitorComponent(otaManager);
     monitorComponent(mqttClient);
-    monitorComponent(i2cBus);
-    monitorComponent(bme280);
+    monitorComponent(deviceManager);
 }
 
 template <class T>
@@ -166,8 +130,7 @@ void finiAndDeleteComponent(T *&t)
 
 void finiAndDeleteComponents()
 {
-    finiAndDeleteComponent(bme280);
-    finiAndDeleteComponent(i2cBus);
+    finiAndDeleteComponent(deviceManager);
     finiAndDeleteComponent(mqttClient);
     finiAndDeleteComponent(otaManager);
     finiAndDeleteComponent(httpsServer);

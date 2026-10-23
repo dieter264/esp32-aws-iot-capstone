@@ -1,0 +1,9 @@
+idf_component_register(
+    SRCS
+        "onewire_bus.cpp"
+    INCLUDE_DIRS
+        "include"
+    PRIV_REQUIRES
+        espressif__onewire_bus
+        app_config_store
+)

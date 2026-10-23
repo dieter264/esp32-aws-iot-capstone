@@ -1,0 +1,16 @@
+idf_component_register(
+    SRCS
+        "tl136.cpp"
+        "tl136_task.cpp"
+        "r4cva02.cpp"
+    INCLUDE_DIRS
+        "include"
+    PRIV_INCLUDE_DIRS
+        "private_include"
+    PRIV_REQUIRES
+        esp_timer
+        app_cmn
+        app_config_store
+        app_state_machine
+        app_modbus_bus
+)

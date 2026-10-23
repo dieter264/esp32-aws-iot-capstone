@@ -2,13 +2,13 @@ idf_component_register(
     SRCS
         "config_store.cpp"
         "config_nvs.cpp"
+        "config_init.cpp"
     PRIV_INCLUDE_DIRS
         "private_include"
     INCLUDE_DIRS
         "include"
     PRIV_REQUIRES
         nvs_flash
-        esp_hw_support
     REQUIRES
         app_cmn
 )

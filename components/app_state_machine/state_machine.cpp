@@ -20,15 +20,18 @@ namespace app::sm
 
     struct StateMachine::State
     {
-        SystemStatus systemStatus_{};
+        bool isInitialized_ = false;
 
-        EventGroupHandle_t eventGroup_{};
+        SystemStatus systemStatus_{};
 
         mutable app::cmn::Mutex mutexWifi_;
         mutable app::cmn::Mutex mutexOta_;
-        mutable app::cmn::Mutex mutexBme280_;
         mutable app::cmn::Mutex mutexMqtt_;
         mutable app::cmn::Mutex mutexSntp_;
+        mutable app::cmn::Mutex mutexDevices_;
+        mutable app::cmn::Mutex mutexBme280_;
+        mutable app::cmn::Mutex mutexDs18b20_;
+        mutable app::cmn::Mutex mutexTl136_;
 
         void lockAllMutexesOrdered();
         void unlockAllMutexesReverseOrdered();
@@ -53,44 +56,50 @@ namespace app::sm
 
     esp_err_t StateMachine::init()
     {
-        if (isInitialized_) return ESP_OK;
+        if (state_->isInitialized_) return ESP_OK;
 
-        state_->eventGroup_ = xEventGroupCreate();
-        ESP_RETURN_ON_FALSE(nullptr != state_->eventGroup_, ESP_ERR_NO_MEM,
-                            TAG, "Could not create event group");
-
-        isInitialized_ = true;
+        state_->isInitialized_ = true;
         ESP_LOGD(TAG, "State Machine initialized");
         return ESP_OK;
     }
 
     void StateMachine::updateWifiStatus(const std::function<void(app::wm::WifiStatus &)> &fn)
     {
-        configASSERT(isInitialized_);
         state_->updateComponentStatus<>(fn);
     }
 
     void StateMachine::updateOtaStatus(const std::function<void(app::ota::OtaStatus &)> &fn)
     {
-        configASSERT(isInitialized_);
-        state_->updateComponentStatus<>(fn);
-    }
-
-    void StateMachine::updateBme280Status(const std::function<void(app::i2c::bme280::Bme280Status &)> &fn)
-    {
-        configASSERT(isInitialized_);
         state_->updateComponentStatus<>(fn);
     }
 
     void StateMachine::updateMqttStatus(const std::function<void(app::mqtt::MqttClientStatus &)> &fn)
     {
-        configASSERT(isInitialized_);
         state_->updateComponentStatus<>(fn);
     }
 
     void StateMachine::updateSntpStatus(const std::function<void(app::sntp::SntpClientStatus &)> &fn)
     {
-        configASSERT(isInitialized_);
+        state_->updateComponentStatus<>(fn);
+    }
+
+    void StateMachine::updateDevicesStatus(const std::function<void(app::dm::DeviceManagerStatus &)> &fn)
+    {
+        state_->updateComponentStatus<>(fn);
+    }
+
+    void StateMachine::updateBme280Status(const std::function<void(app::i2c::bme280::Bme280Status &)> &fn)
+    {
+        state_->updateComponentStatus<>(fn);
+    }
+
+    void StateMachine::updateDs18b20Status(const std::function<void(app::onewire::ds18b20::Ds18b20Status &)> &fn)
+    {
+        state_->updateComponentStatus<>(fn);
+    }
+
+    void StateMachine::updateTl136Status(const std::function<void(app::modbus::tl136::Tl136Status &)> &fn)
+    {
         state_->updateComponentStatus<>(fn);
     }
 
@@ -100,14 +109,8 @@ namespace app::sm
         state_->systemStatus_ = {};
         state_->unlockAllMutexesReverseOrdered();
 
-        if (nullptr != state_->eventGroup_)
-        {
-            vEventGroupDelete(state_->eventGroup_);
-            state_->eventGroup_ = {};
-        }
-
-        if (!isInitialized_) return;
-        isInitialized_ = false;
+        if (!state_->isInitialized_) return;
+        state_->isInitialized_ = false;
         ESP_LOGD(TAG, "State Machine finalized");
     }
 
@@ -122,12 +125,12 @@ namespace app::sm
 
     bool StateMachine::isInitialized() const
     {
-        return isInitialized_;
+        return state_->isInitialized_;
     }
 
     void StateMachine::getSnapshot(SystemStatus &systemStatus) const
     {
-        configASSERT(isInitialized_);
+        configASSERT(state_->isInitialized_);
         state_->lockAllMutexesOrdered();
         systemStatus = state_->systemStatus_;
         state_->unlockAllMutexesReverseOrdered();
@@ -135,55 +138,71 @@ namespace app::sm
 
     void StateMachine::getWifiStatus(app::wm::WifiStatus &status) const
     {
-        configASSERT(isInitialized_);
         state_->getComponentStatus<>(status);
     }
 
     void StateMachine::getOtaStatus(app::ota::OtaStatus &status) const
     {
-        configASSERT(isInitialized_);
-        state_->getComponentStatus<>(status);
-    }
-
-    void StateMachine::getBme280Status(app::i2c::bme280::Bme280Status &status) const
-    {
-        configASSERT(isInitialized_);
         state_->getComponentStatus<>(status);
     }
 
     void StateMachine::getMqttStatus(app::mqtt::MqttClientStatus &status) const
     {
-        configASSERT(isInitialized_);
         state_->getComponentStatus<>(status);
     }
 
     void StateMachine::getSntpStatus(app::sntp::SntpClientStatus &status) const
     {
-        configASSERT(isInitialized_);
+        state_->getComponentStatus<>(status);
+    }
+
+    void StateMachine::getDevicesStatus(app::dm::DeviceManagerStatus &status) const
+    {
+        state_->getComponentStatus<>(status);
+    }
+
+    void StateMachine::getBme280Status(app::i2c::bme280::Bme280Status &status) const
+    {
+        state_->getComponentStatus<>(status);
+    }
+
+    void StateMachine::getDs18b20Status(app::onewire::ds18b20::Ds18b20Status &status) const
+    {
+        state_->getComponentStatus<>(status);
+    }
+
+    void StateMachine::getTl136Status(app::modbus::tl136::Tl136Status &status) const
+    {
         state_->getComponentStatus<>(status);
     }
 
     esp_err_t StateMachine::postEvent(esp_event_base_t event_base, int32_t event_id)
     {
-        configASSERT(isInitialized_);
+        configASSERT(state_->isInitialized_);
         return esp_event_post(event_base, event_id, nullptr, 0, portMAX_DELAY);
     }
 
     void StateMachine::State::lockAllMutexesOrdered()
     {
         mutexWifi_.lock();
-        mutexSntp_.lock();
-        mutexMqtt_.lock();
-        mutexBme280_.lock();
         mutexOta_.lock();
+        mutexMqtt_.lock();
+        mutexSntp_.lock();
+        mutexDevices_.lock();
+        mutexBme280_.lock();
+        mutexDs18b20_.lock();
+        mutexTl136_.lock();
     }
 
     void StateMachine::State::unlockAllMutexesReverseOrdered()
     {
-        mutexOta_.unlock();
+        mutexTl136_.unlock();
+        mutexDs18b20_.unlock();
         mutexBme280_.unlock();
-        mutexMqtt_.unlock();
+        mutexDevices_.unlock();
         mutexSntp_.unlock();
+        mutexMqtt_.unlock();
+        mutexOta_.unlock();
         mutexWifi_.unlock();
     }
 
@@ -226,25 +245,6 @@ namespace app::sm
     };
 
     template <>
-    struct StateMachine::State::ComponentTraits<app::i2c::bme280::Bme280Status>
-    {
-        static auto &mutex(const StateMachine::State &smState)
-        {
-            return smState.mutexBme280_;
-        }
-
-        static auto &status(SystemStatus &systemStatus)
-        {
-            return systemStatus.bme280;
-        }
-
-        static const auto &status(const SystemStatus &systemStatus)
-        {
-            return systemStatus.bme280;
-        }
-    };
-
-    template <>
     struct StateMachine::State::ComponentTraits<app::mqtt::MqttClientStatus>
     {
         static auto &mutex(const StateMachine::State &smState)
@@ -282,9 +282,86 @@ namespace app::sm
         }
     };
 
+    template <>
+    struct StateMachine::State::ComponentTraits<app::dm::DeviceManagerStatus>
+    {
+        static auto &mutex(const StateMachine::State &smState)
+        {
+            return smState.mutexDevices_;
+        }
+
+        static auto &status(SystemStatus &systemStatus)
+        {
+            return systemStatus.devices;
+        }
+
+        static const auto &status(const SystemStatus &systemStatus)
+        {
+            return systemStatus.devices;
+        }
+    };
+
+    template <>
+    struct StateMachine::State::ComponentTraits<app::i2c::bme280::Bme280Status>
+    {
+        static auto &mutex(const StateMachine::State &smState)
+        {
+            return smState.mutexBme280_;
+        }
+
+        static auto &status(SystemStatus &systemStatus)
+        {
+            return systemStatus.bme280;
+        }
+
+        static const auto &status(const SystemStatus &systemStatus)
+        {
+            return systemStatus.bme280;
+        }
+    };
+
+    template <>
+    struct StateMachine::State::ComponentTraits<app::onewire::ds18b20::Ds18b20Status>
+    {
+        static auto &mutex(const StateMachine::State &smState)
+        {
+            return smState.mutexDs18b20_;
+        }
+
+        static auto &status(SystemStatus &systemStatus)
+        {
+            return systemStatus.ds18b20;
+        }
+
+        static const auto &status(const SystemStatus &systemStatus)
+        {
+            return systemStatus.ds18b20;
+        }
+    };
+
+    template <>
+    struct StateMachine::State::ComponentTraits<app::modbus::tl136::Tl136Status>
+    {
+        static auto &mutex(const StateMachine::State &smState)
+        {
+            return smState.mutexTl136_;
+        }
+
+        static auto &status(SystemStatus &systemStatus)
+        {
+            return systemStatus.tl136;
+        }
+
+        static const auto &status(const SystemStatus &systemStatus)
+        {
+            return systemStatus.tl136;
+        }
+    };
+
     template <typename T>
     void StateMachine::State::updateComponentStatus(const std::function<void(T &)> &fn)
     {
+        configASSERT(isInitialized_);
         std::lock_guard lg(ComponentTraits<T>::mutex(*this));
         configASSERT(fn);
         fn(ComponentTraits<T>::status(this->systemStatus_));
@@ -293,6 +370,7 @@ namespace app::sm
     template <typename T>
     void StateMachine::State::getComponentStatus(T &status) const
     {
+        configASSERT(isInitialized_);
         std::lock_guard lg(ComponentTraits<T>::mutex(*this));
         status = ComponentTraits<T>::status(this->systemStatus_);
     }

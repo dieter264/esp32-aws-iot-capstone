@@ -15,6 +15,7 @@ namespace app::sm
 
 namespace app::wm
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /**
@@ -40,12 +41,16 @@ namespace app::wm
          */
         void fini();
 
+        /** Restarts Wi-Fi using the latest configuration. */
         esp_err_t reset();
 
+        /** Returns whether initialization completed successfully. */
         bool isInitialized() const;
 
+        /** Returns the non-owning ConfigStore dependency. */
         const app::cfg::ConfigStore & getConfigStore() const;
 
+        /** Returns the non-owning StateMachine dependency. */
         app::sm::StateMachine & getStateMachine();
 
     private:

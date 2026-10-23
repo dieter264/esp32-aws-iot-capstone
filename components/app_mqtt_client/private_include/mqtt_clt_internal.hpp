@@ -17,18 +17,22 @@ namespace app::mqtt
 
     enum TaskWakeBit : EventBits_t
     {
-        STOP              = 1u << 0,
-        STOP_ACK          = 1u << 1,
-        CONFIG_UPDATE     = 1u << 2,
-        WIFI_UPDATE       = 1u << 3,
-        BME280_DATA_READY = 1u << 4,
+        STOP               = 1u << 0,
+        STOP_ACK           = 1u << 1,
+        CONFIG_UPDATE      = 1u << 2,
+        WIFI_UPDATE        = 1u << 3,
+        BME280_DATA_READY  = 1u << 4,
+        DS18B20_DATA_READY = 1u << 5,
+        TL136_DATA_READY   = 1u << 6
     };
 
     constexpr EventBits_t TASK_WAIT_BIT_MASK =
         TaskWakeBit::STOP |
         TaskWakeBit::CONFIG_UPDATE |
         TaskWakeBit::WIFI_UPDATE |
-        TaskWakeBit::BME280_DATA_READY;
+        TaskWakeBit::BME280_DATA_READY |
+        TaskWakeBit::DS18B20_DATA_READY |
+        TaskWakeBit::TL136_DATA_READY;
 
     struct MqttClient::State
     {
@@ -69,6 +73,9 @@ namespace app::mqtt
         void createAndStartClient();
         void stopAndDestroyClient();
         void publishLatestBme280Data();
+        void publishLatestDs18b20Data();
+        void publishLatestTl136Data();
+        void publishLatest(const char *topic, const char *payload, int payloadLen);
 
         bool isAppMqttConfigAvailable(const MqttClientConfig &);
 

@@ -4,6 +4,7 @@
 
 namespace app::rm
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /** Owns process-wide NVS, network-interface, and default event-loop resources. */
@@ -23,8 +24,10 @@ namespace app::rm
         /** Releases the global resources; dependent components must already be stopped. */
         void fini();
 
+        /** Releases and recreates all global resources. */
         esp_err_t reset();
 
+        /** Returns whether all global resources are initialized. */
         bool isInitialized() const;
 
     private:

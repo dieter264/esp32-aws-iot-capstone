@@ -11,8 +11,9 @@ This README only describes the local MQTT broker test setup.
 The MQTT test verifies the following path:
 
 ```text
-BME280 sample
-- Event posted for BME280 data ready
+BME280, DS18B20, or TL136 acquisition attempt
+- Sensor status and error_status updated
+- Sensor-specific data-ready event posted
 - MQTT client task
 - TLS connection to Mosquitto
 - MQTT publish
@@ -309,9 +310,15 @@ The full PEM block is required:
 
 Save the configuration and wait for the MQTT component to reload the configuration.
 
+### Enable the sensors
+
+With fresh NVS configuration and the default build settings, all sensors are disabled. On the HTTPS configuration page, enable each sensor connected to the board and save its settings. For the DS18B20, enter its matching 64-bit ROM address. For the TL136, set the R4CVA02 address and input channel to match the wiring.
+
+Check the active-device state and sensor readings on the configuration page before expecting MQTT messages. Wiring and supply details are documented in [docs/HARDWARE.md](../docs/HARDWARE.md).
+
 ## Expected result
 
-With a correct broker URI and CA certificate, the ESP32 should connect to Mosquitto via TLS and publish BME280 payloads.
+With a correct broker URI and CA certificate, the ESP32 should connect to Mosquitto via TLS and publish a separate JSON message for each enabled, running sensor after its data-ready events.
 
 Expected firmware behavior:
 
@@ -319,20 +326,44 @@ Expected firmware behavior:
 Wi-Fi STA connected
 MQTT client starts
 MQTT_EVENT_CONNECTED
-BME280 samples continue
-APP_EVENT_BME280_DATA_READY is posted
-MQTT publishes BME280 JSON
+Enabled sensors continue acquisition
+Sensor-specific APP_EVENT_*_DATA_READY events are posted
+MQTT publishes the corresponding sensor JSON
 ```
 
-Expected output after the ESP32 connects and publishes:
+### Topics and payload units
+
+| Sensor | Topic |
+|---|---|
+| BME280 | `devices/001-esp32s3/01-bme280` |
+| DS18B20 | `devices/001-esp32s3/02-ds18b20` |
+| TL136 | `devices/001-esp32s3/03-tl136` |
+
+The device identifier and topics are currently fixed in the firmware. Messages use QoS 0 with the MQTT retain flag disabled. Start the subscriber before waiting for the next sensor event; the broker does not replay these messages to a new subscriber.
+
+| Data field | Interpretation |
+|---|---|
+| `temp_degCx100` | Temperature in °C × 100; divide by 100 |
+| `press_PaQ24d8` | BME280 pressure in Pa × 256; divide by 256 |
+| `hum_RhQ22d10` | BME280 relative humidity in %RH × 1024; divide by 1024 |
+| `current_mAx100` | TL136 loop current in mA × 100; divide by 100 |
+| `water_level_mm` | TL136 water level in millimetres |
+
+### Successful readings
+
+Example subscriber output with all three sensors enabled, running, and successfully sampled:
 
 ```text
-devices/001-esp32s3/01-bme280 {"data":{"temp_degCx100":2843,"press_PaQ24d8":25653085,"hum_RhQ22d10":54210},"sample_time_valid":true,"sample_time_utc_us":1782152669572637}
+devices/001-esp32s3/01-bme280 {"data":{"temp_degCx100":2843,"press_PaQ24d8":25653085,"hum_RhQ22d10":54210},"sample_time_valid":true,"sample_time_utc_us":1782152669572637,"error_status":"ESP_OK"}
+devices/001-esp32s3/02-ds18b20 {"data":{"temp_degCx100":2350},"sample_time_valid":true,"sample_time_utc_us":1782152669572637,"error_status":"ESP_OK"}
+devices/001-esp32s3/03-tl136 {"data":{"current_mAx100":1200,"water_level_mm":1000},"sample_time_valid":true,"sample_time_utc_us":1782152669572637,"error_status":"ESP_OK"}
 ```
 
-The exact values depend on the current sensor readings and whether SNTP time synchronization is already valid.
+The exact values and timestamps depend on each sensor's sampling time and SNTP state. The TL136 example assumes a 2000 mm full-scale range.
 
-Before SNTP synchronization, payloads may look like this:
+### Timestamp validity
+
+Before the first SNTP synchronization, a successful BME280 reading may look like this:
 
 ```json
 {
@@ -342,22 +373,32 @@ Before SNTP synchronization, payloads may look like this:
     "hum_RhQ22d10": 54210
   },
   "sample_time_valid": false,
-  "sample_time_utc_us": 0
+  "sample_time_utc_us": 0,
+  "error_status": "ESP_OK"
 }
 ```
 
-After SNTP synchronization, later payloads should contain:
+After SNTP synchronization, successful readings include a valid UTC timestamp in microseconds, as in the subscriber examples above. Sensor-read success (`error_status`) and UTC timestamp validity (`sample_time_valid`) are independent.
+
+### Failed readings
+
+Each acquisition attempt updates `error_status`. When a read fails, the running sensor keeps the data and timestamps from its last successful sample and still posts its data-ready event. A connected MQTT client can therefore report the failure alongside the previous sample:
 
 ```json
 {
+  "data": {
+    "current_mAx100": 1200,
+    "water_level_mm": 1000
+  },
   "sample_time_valid": true,
-  "sample_time_utc_us": 1782152669572637
+  "sample_time_utc_us": 1782152669572637,
+  "error_status": "ESP_ERR_TIMEOUT"
 }
 ```
 
-BME280 data validity is independent from timestamp validity.
+This TL136 example describes a timeout after an earlier successful sample. The unchanged timestamp belongs to that earlier sample, not to the failed attempt or MQTT publication time. The same failure-reporting pattern applies to BME280 and DS18B20.
 
-The firmware may publish valid BME280 data even when `sample_time_valid` is `false`.
+Before any successful acquisition, data and timestamps remain at their initial zero values. Consumers must check `error_status` before treating a message as a successful new measurement. Sensor initialization failures may prevent the sampling task from starting; inspect active-device state and logs if no messages arrive.
 
 ## Troubleshooting
 
@@ -407,7 +448,7 @@ Expected behavior:
 
 ```text
 MQTT disconnect/error is logged
-BME280 continues sampling
+Enabled sensors continue acquisition
 SNTP continues working
 device does not reboot
 MQTT reconnects after Mosquitto is started again
@@ -424,6 +465,9 @@ CA certificate is correct
 Mosquitto is running
 mosquitto_sub uses the same CA certificate
 subscriber topic is '#'
-BME280 sampling is active
+At least one connected sensor is enabled and active
+DS18B20 ROM address or TL136 converter settings match the hardware
 MQTT status is CONNECTED
 ```
+
+If messages arrive with a non-`ESP_OK` `error_status`, MQTT transport is working; inspect the corresponding sensor's wiring, power, address, and status. A false `sample_time_valid` with `ESP_OK` indicates a successful reading without a valid UTC sample timestamp.

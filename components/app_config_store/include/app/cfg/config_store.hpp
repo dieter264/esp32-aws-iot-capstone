@@ -9,6 +9,7 @@
 
 namespace app::cfg
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /**
@@ -22,7 +23,7 @@ namespace app::cfg
 
         ~ConfigStore();
 
-        ConfigStore(const ConfigStore &) = delete;
+        ConfigStore(const ConfigStore &)            = delete;
         ConfigStore &operator=(const ConfigStore &) = delete;
 
         /** Loads defaults and persisted values. Idempotent after success. */
@@ -37,19 +38,38 @@ namespace app::cfg
         /** Finalizes and reloads configuration from NVS. */
         esp_err_t reset();
 
+        /** Returns whether the configuration cache is ready for access. */
         bool isInitialized() const;
 
         /** Copies a consistent snapshot. May block briefly on the cache mutex. */
         void getSnapshot(AppConfig &) const;
 
+        /** Copies the I2C bus configuration from the cache. */
         void getI2cBusConfig(app::i2c::bus::I2cBusConfig &) const;
+        /** Copies the BME280 configuration from the cache. */
         void getBme280Config(app::i2c::bme280::Bme280Config &) const;
+        /** Copies the Wi-Fi SoftAP configuration from the cache. */
         void getWifiApConfig(app::wm::WifiManagerApConfig &) const;
+        /** Copies the Wi-Fi station configuration from the cache. */
         void getWifiStaConfig(app::wm::WifiManagerStaConfig &) const;
+        /** Copies the HTTPS server configuration from the cache. */
         void getHttpsServerConfig(app::https::HttpsServerConfig &) const;
+        /** Copies the OTA manager configuration from the cache. */
         void getOtaManagerConfig(app::ota::OtaManagerConfig &) const;
+        /** Copies the MQTT client configuration from the cache. */
         void getMqttClientConfig(app::mqtt::MqttClientConfig &) const;
+        /** Copies the SNTP client configuration from the cache. */
         void getSntpClientConfig(app::sntp::SntpClientConfig &) const;
+        /** Copies the enabled-device configuration from the cache. */
+        void getDeviceManagerConfig(app::dm::DeviceManagerConfig &) const;
+        /** Copies the 1-Wire bus configuration from the cache. */
+        void getOneWireBusConfig(app::onewire::bus::OneWireBusConfig &) const;
+        /** Copies the DS18B20 configuration from the cache. */
+        void getDs18b20Config(app::onewire::ds18b20::Ds18b20Config &) const;
+        /** Copies the Modbus bus configuration from the cache. */
+        void getModbusBusConfig(app::modbus::bus::ModbusBusConfig &) const;
+        /** Copies the TL136 configuration from the cache. */
+        void getTl136Config(app::modbus::tl136::Tl136Config &) const;
 
     private:
         bool isInitialized_ = false;
@@ -72,7 +92,7 @@ namespace app::cfg
             return false;
         }
 
-        const size_t srcLen = strlen(src);
+        const size_t srcLen  = strlen(src);
         const size_t copyLen = (srcLen < (N - 1)) ? srcLen : (N - 1);
 
         memcpy(dst, src, copyLen);
@@ -93,7 +113,7 @@ namespace app::cfg
         if (nullptr == src)
             return 0;
 
-        const size_t srcLen = strlen(src);
+        const size_t srcLen  = strlen(src);
         const size_t copyLen = (srcLen < N) ? srcLen : N;
 
         memcpy(dst, src, copyLen);

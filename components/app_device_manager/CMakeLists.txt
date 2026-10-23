@@ -1,0 +1,21 @@
+idf_component_register(
+    SRCS
+        "device_manager.cpp"
+        "device_mgr_task.cpp"
+        "device_mgr_monitor.cpp"
+    INCLUDE_DIRS
+        "include"
+    PRIV_INCLUDE_DIRS
+        "private_include"
+    PRIV_REQUIRES
+        esp_event
+        app_cmn
+        app_config_store
+        app_state_machine
+        app_i2c_bus
+        app_i2c_bme280
+        app_onewire_bus
+        app_onewire_ds18b20
+        app_modbus_bus
+        app_modbus_tl136
+)

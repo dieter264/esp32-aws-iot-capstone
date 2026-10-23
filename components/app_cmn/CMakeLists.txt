@@ -3,5 +3,4 @@ idf_component_register(
         "include"
     REQUIRES 
         esp_event
-        freertos
 )

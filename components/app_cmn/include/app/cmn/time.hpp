@@ -5,6 +5,7 @@
 
 namespace app::cmn::time
 {
+    /** Returns the current UTC time in microseconds, or zero if it cannot be read. */
     inline uint64_t getUtcTimeUs()
     {
         struct timeval tv{};

@@ -29,11 +29,10 @@ namespace app::i2c::bme280
             (static_cast<uint16_t>(raw[1]) << 8) | static_cast<uint16_t>(raw[0]));
     }
 
-    Bme280::Bme280(const app::cfg::DeviceID devID,
-                   app::cfg::ConfigStore &store,
+    Bme280::Bme280(app::cfg::ConfigStore &store,
                    app::sm::StateMachine &sm,
                    app::i2c::bus::I2cBus &bus)
-        : state_(std::make_unique<State>(devID, store, sm, bus)) {}
+        : state_(std::make_unique<State>(store, sm, bus)) {}
 
     Bme280::~Bme280()
     {
@@ -47,10 +46,14 @@ namespace app::i2c::bme280
         ESP_RETURN_ON_FALSE(state_->cfgStore_.isInitialized(), ESP_ERR_INVALID_STATE,
                             TAG, "Config Store not initialized");
 
+        ESP_RETURN_ON_FALSE(state_->stateMachine_.isInitialized(), ESP_ERR_INVALID_STATE,
+                            TAG, "State Machine not initialized");
+
         ESP_RETURN_ON_FALSE(state_->i2cBus_.isInitialized(), ESP_ERR_INVALID_STATE,
                             TAG, "I2C Bus not initialized");
 
         esp_err_t ret = ESP_FAIL;
+
         LOGD_CALL(TAG, ret, state_->initDevice, (), "Device initialized");
         if (ESP_OK != ret)
         {
@@ -108,13 +111,21 @@ namespace app::i2c::bme280
         return state_->isInitialized_;
     }
 
+    bool Bme280::hasConfigChanged() const
+    {
+        Bme280Config cfg{};
+        state_->cfgStore_.getBme280Config(cfg);
+
+        return (cfg != state_->initialCfg_);
+    }
+
     esp_err_t Bme280::State::initDevice()
     {
         app::cfg::AppConfig appCfg;
         cfgStore_.getSnapshot(appCfg);
 
         const auto i2cBusCfg = appCfg.i2cBus;
-        auto &bme280Cfg      = appCfg.bme280;
+        initialCfg_          = appCfg.bme280;
         auto portNum         = static_cast<i2c_port_num_t>(i2cBusCfg.i2c_port_num);
 
         i2c_master_bus_handle_t busHandle;
@@ -122,21 +133,15 @@ namespace app::i2c::bme280
                              (portNum, &busHandle),
                              "busHandle= %p", busHandle);
 
-        const uint16_t currentDevAddress = bme280Cfg.device_address;
-        ESP_RETURN_ON_ERROR(i2cBus_.getDevAddressForChipID(BME280_CHIP_ID,
-                                                           BME280_CHIP_ID_REGISTER,
-                                                           bme280Cfg.device_address),
-                            TAG, "Failed to get device address");
-
-        if (currentDevAddress != bme280Cfg.device_address)
-        {
-            LOGD_CALL_RET_ON_ERR(TAG, cfgStore_.update, (appCfg),
-                                 "ConfigStore updated with new device address");
-        }
+        ESP_RETURN_ON_ERROR(
+            i2cBus_.getDevAddressForChipID(BME280_CHIP_ID,
+                                           BME280_CHIP_ID_REGISTER,
+                                           appCfg.bme280.device_address),
+            TAG, "Failed to get device address");
 
         i2c_device_config_t devConfig = {
             .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-            .device_address  = bme280Cfg.device_address,
+            .device_address  = appCfg.bme280.device_address,
             .scl_speed_hz    = i2cBusCfg.scl_speed_hz,
             .scl_wait_us     = 0,
             .flags           = {.disable_ack_check = false}};

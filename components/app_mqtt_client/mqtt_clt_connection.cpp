@@ -169,8 +169,7 @@ namespace app::mqtt
 
         app::i2c::bme280::Bme280Status bme280{};
         stateMachine_.getBme280Status(bme280);
-        // DATA_READY already establishes sensor validity. UTC validity is encoded
-        // separately in the payload and must not suppress an otherwise valid sample.
+
         static constexpr char BME280_JSON_FMT[] =
             "{"
             "\"data\":{"
@@ -178,8 +177,9 @@ namespace app::mqtt
             "\"press_PaQ24d8\":%" PRIu32 ","
             "\"hum_RhQ22d10\":%" PRIu32
             "},"
-            "\"sample_time_valid\":%s" ","
-            "\"sample_time_utc_us\":%" PRIu64
+            "\"sample_time_valid\":%s,"
+            "\"sample_time_utc_us\":%" PRIu64 ","
+            "\"error_status\":\"%s\""
             "}";
 
         const int payloadLen = snprintf(nullptr, 0,
@@ -188,7 +188,8 @@ namespace app::mqtt
                                         bme280.data.press_PaQ24d8,
                                         bme280.data.hum_RhQ22d10,
                                         bme280.sample_time_valid ? "true" : "false",
-                                        bme280.sample_time_utc_us);
+                                        bme280.sample_time_utc_us,
+                                        esp_err_to_name(bme280.error_status));
         if (0 > payloadLen)
         {
             ESP_LOGE(TAG, "BME280 JSON formatter failed");
@@ -203,7 +204,8 @@ namespace app::mqtt
                                         bme280.data.press_PaQ24d8,
                                         bme280.data.hum_RhQ22d10,
                                         bme280.sample_time_valid ? "true" : "false",
-                                        bme280.sample_time_utc_us);
+                                        bme280.sample_time_utc_us,
+                                        esp_err_to_name(bme280.error_status));
 
         if (writtenLen != payloadLen)
         {
@@ -212,20 +214,134 @@ namespace app::mqtt
         }
 
         ESP_LOGI(TAG, "BME280 MQTT payload: %s", payload.get());
+        publishLatest("devices/001-esp32s3/01-bme280", payload.get(), payloadLen);
+    }
 
-        static constexpr char TOPIC[] = "devices/001-esp32s3/01-bme280";
-        static constexpr int QOS0     = 0;
-        static constexpr int RETAIN0  = 0;
+    void MqttClient::State::publishLatestDs18b20Data()
+    {
+        app::mqtt::MqttClientStatus mqttStatus{};
+        stateMachine_.getMqttStatus(mqttStatus);
+        if (app::mqtt::MqttState::CONNECTED != mqttStatus.state)
+        {
+            return;
+        }
+
+        app::onewire::ds18b20::Ds18b20Status ds18b20{};
+        stateMachine_.getDs18b20Status(ds18b20);
+
+        static constexpr char DS18B20_JSON_FMT[] =
+            "{"
+            "\"data\":{"
+            "\"temp_degCx100\":%" PRId32
+            "},"
+            "\"sample_time_valid\":%s,"
+            "\"sample_time_utc_us\":%" PRIu64 ","
+            "\"error_status\":\"%s\""
+            "}";
+
+        const int payloadLen = snprintf(nullptr, 0,
+                                        DS18B20_JSON_FMT,
+                                        ds18b20.data.temp_degCx100,
+                                        ds18b20.sample_time_valid ? "true" : "false",
+                                        ds18b20.sample_time_utc_us,
+                                        esp_err_to_name(ds18b20.error_status));
+        if (0 > payloadLen)
+        {
+            ESP_LOGE(TAG, "DS18B20 JSON formatter failed");
+            return;
+        }
+
+        auto payload = std::make_unique<char[]>((size_t)payloadLen + 1U);
+
+        const int writtenLen = snprintf(payload.get(), (size_t)payloadLen + 1U,
+                                        DS18B20_JSON_FMT,
+                                        ds18b20.data.temp_degCx100,
+                                        ds18b20.sample_time_valid ? "true" : "false",
+                                        ds18b20.sample_time_utc_us,
+                                        esp_err_to_name(ds18b20.error_status));
+
+        if (writtenLen != payloadLen)
+        {
+            ESP_LOGE(TAG, "DS18B20 JSON buffer failed");
+            return;
+        }
+
+        ESP_LOGI(TAG, "DS18B20 MQTT payload: %s", payload.get());
+        publishLatest("devices/001-esp32s3/02-ds18b20", payload.get(), payloadLen);
+    }
+
+    void MqttClient::State::publishLatestTl136Data()
+    {
+        app::mqtt::MqttClientStatus mqttStatus{};
+        stateMachine_.getMqttStatus(mqttStatus);
+        if (app::mqtt::MqttState::CONNECTED != mqttStatus.state)
+        {
+            return;
+        }
+
+        app::modbus::tl136::Tl136Status tl136{};
+        stateMachine_.getTl136Status(tl136);
+
+        static constexpr char TL136_JSON_FMT[] =
+            "{"
+            "\"data\":{"
+            "\"current_mAx100\":%" PRIu16 ","
+            "\"water_level_mm\":%" PRIu16
+            "},"
+            "\"sample_time_valid\":%s,"
+            "\"sample_time_utc_us\":%" PRIu64 ","
+            "\"error_status\":\"%s\""
+            "}";
+
+        const int payloadLen = snprintf(nullptr, 0,
+                                        TL136_JSON_FMT,
+                                        tl136.data.current_mAx100,
+                                        tl136.data.water_level_mm,
+                                        tl136.sample_time_valid ? "true" : "false",
+                                        tl136.sample_time_utc_us,
+                                        esp_err_to_name(tl136.error_status));
+        if (0 > payloadLen)
+        {
+            ESP_LOGE(TAG, "TL136 JSON formatter failed");
+            return;
+        }
+
+        auto payload = std::make_unique<char[]>((size_t)payloadLen + 1U);
+
+        const int writtenLen = snprintf(payload.get(), (size_t)payloadLen + 1U,
+                                        TL136_JSON_FMT,
+                                        tl136.data.current_mAx100,
+                                        tl136.data.water_level_mm,
+                                        tl136.sample_time_valid ? "true" : "false",
+                                        tl136.sample_time_utc_us,
+                                        esp_err_to_name(tl136.error_status));
+
+        if (writtenLen != payloadLen)
+        {
+            ESP_LOGE(TAG, "TL136 JSON buffer failed");
+            return;
+        }
+
+        ESP_LOGI(TAG, "TL136 MQTT payload: %s", payload.get());
+        publishLatest("devices/001-esp32s3/03-tl136", payload.get(), payloadLen);
+    }
+
+    void MqttClient::State::publishLatest(const char *topic,
+                                          const char *payload,
+                                          int payloadLen)
+    {
+        static constexpr int QOS0    = 0;
+        static constexpr int RETAIN0 = 0;
 
         auto ret = esp_mqtt_client_publish(espMqttClt_,
-                                           TOPIC,
-                                           payload.get(),
+                                           topic,
+                                           payload,
                                            payloadLen,
                                            QOS0,
                                            RETAIN0);
         if (0 > ret)
         {
-            ESP_LOGW(TAG, "Failed to publish BME280 data");
+            ESP_LOGW(TAG, "Failed to publish data of '%s'", topic);
             return;
         }
 

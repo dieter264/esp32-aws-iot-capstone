@@ -117,6 +117,33 @@ namespace app::https
         return true;
     }
 
+    bool parseUint64Hex(const char *s, uint64_t &out)
+    {
+        if ('0' == s[0] && ('x' == s[1] || 'X' == s[1]))
+        {
+            s += 2;
+        }
+
+        if ('\0' == *s)
+        {
+            return false;
+        }
+
+        uint64_t v = 0U;
+        for (const char *p = s; '\0' != *p; ++p)
+        {
+            uint8_t digit = 0;
+            if (!hexToNibble(*p, digit) || v > ((UINT64_MAX - digit) >> 4U))
+            {
+                return false;
+            }
+            v = (v << 4U) | digit;
+        }
+
+        out = v;
+        return true;
+    }
+
     bool parseConfigField(const char *key, const char *value, ConfigFormData &form)
     {
         uint32_t v = 0;
@@ -197,7 +224,28 @@ namespace app::https
             return app::cfg::cstrCopy(form.sntpStaticServer2, value);
         }
 
-        if (0 == strcmp(key, "bme_addr"))
+        if (0 == strcmp(key, "bme280_enabled"))
+        {
+            form.bme280EnabledPresent = true;
+            form.bme280Enabled        = (0 == strcmp(value, "1"));
+            return true;
+        }
+
+        if (0 == strcmp(key, "ds18b20_enabled"))
+        {
+            form.ds18b20EnabledPresent = true;
+            form.ds18b20Enabled        = (0 == strcmp(value, "1"));
+            return true;
+        }
+
+        if (0 == strcmp(key, "tl136_enabled"))
+        {
+            form.tl136EnabledPresent = true;
+            form.tl136Enabled        = (0 == strcmp(value, "1"));
+            return true;
+        }
+
+        if (0 == strcmp(key, "bme280_addr"))
         {
             if (!parseUint32(value, 0U, 255U, v))
             {
@@ -208,41 +256,130 @@ namespace app::https
                 return false;
             }
 
-            form.bmeAddrPresent = true;
-            form.bmeAddr        = (uint16_t)v;
+            form.bme280AddrPresent = true;
+            form.bme280Addr        = (uint16_t)v;
             return true;
         }
 
-        if (0 == strcmp(key, "bme_osrs_t"))
+        if (0 == strcmp(key, "bme280_probe_interval_ms"))
+        {
+            if (!parseUint32(value, 1000U, 3600000U, v))
+            {
+                return false;
+            }
+            form.bme280ProbeIntervalPresent = true;
+            form.bme280ProbeIntervalMs      = v;
+            return true;
+        }
+
+        if (0 == strcmp(key, "bme280_osrs_t"))
         {
             if (!parseUint32(value, 0U, 5U, v))
             {
                 return false;
             }
-            form.bmeOsrsTPresent = true;
-            form.bmeOsrsT        = (uint8_t)v;
+            form.bme280OsrsTPresent = true;
+            form.bme280OsrsT        = (uint8_t)v;
             return true;
         }
 
-        if (0 == strcmp(key, "bme_osrs_p"))
+        if (0 == strcmp(key, "bme280_osrs_p"))
         {
             if (!parseUint32(value, 0U, 5U, v))
             {
                 return false;
             }
-            form.bmeOsrsPPresent = true;
-            form.bmeOsrsP        = (uint8_t)v;
+            form.bme280OsrsPPresent = true;
+            form.bme280OsrsP        = (uint8_t)v;
             return true;
         }
 
-        if (0 == strcmp(key, "bme_osrs_h"))
+        if (0 == strcmp(key, "bme280_osrs_h"))
         {
             if (!parseUint32(value, 0U, 5U, v))
             {
                 return false;
             }
-            form.bmeOsrsHPresent = true;
-            form.bmeOsrsH        = (uint8_t)v;
+            form.bme280OsrsHPresent = true;
+            form.bme280OsrsH        = (uint8_t)v;
+            return true;
+        }
+
+        if (0 == strcmp(key, "ds18b20_address"))
+        {
+            uint64_t address = 0;
+            if (!parseUint64Hex(value, address))
+            {
+                return false;
+            }
+            form.ds18b20AddressPresent = true;
+            form.ds18b20Address        = address;
+            return true;
+        }
+
+        if (0 == strcmp(key, "ds18b20_probe_interval_ms"))
+        {
+            if (!parseUint32(value, 1000U, 3600000U, v))
+            {
+                return false;
+            }
+            form.ds18b20ProbeIntervalPresent = true;
+            form.ds18b20ProbeIntervalMs      = v;
+            return true;
+        }
+
+        if (0 == strcmp(key, "tl136_ai_converter_address"))
+        {
+            if (!parseUint32(value, 1U, 247U, v))
+            {
+                return false;
+            }
+            form.tl136AiConverterAddressPresent = true;
+            form.tl136AiConverterAddress        = static_cast<uint8_t>(v);
+            return true;
+        }
+
+        if (0 == strcmp(key, "tl136_ai_converter_channel"))
+        {
+            if (!parseUint32(value, 1U, 2U, v))
+            {
+                return false;
+            }
+            form.tl136AiConverterChannelPresent = true;
+            form.tl136AiConverterChannel        = static_cast<uint8_t>(v);
+            return true;
+        }
+
+        if (0 == strcmp(key, "tl136_ai_converter_calibration"))
+        {
+            if (!parseUint32(value, 1U, 65535U, v))
+            {
+                return false;
+            }
+            form.tl136AiConverterCalibrationPresent = true;
+            form.tl136AiConverterCalibration        = static_cast<uint16_t>(v);
+            return true;
+        }
+
+        if (0 == strcmp(key, "tl136_probe_interval_ms"))
+        {
+            if (!parseUint32(value, 1000U, 3600000U, v))
+            {
+                return false;
+            }
+            form.tl136ProbeIntervalPresent = true;
+            form.tl136ProbeIntervalMs      = v;
+            return true;
+        }
+
+        if (0 == strcmp(key, "tl136_full_scale_water_level_mm"))
+        {
+            if (!parseUint32(value, 1U, 65535U, v))
+            {
+                return false;
+            }
+            form.tl136FullScaleWaterLevelPresent = true;
+            form.tl136FullScaleWaterLevelMm      = static_cast<uint16_t>(v);
             return true;
         }
 
@@ -361,24 +498,100 @@ namespace app::https
             }
         }
 
-        if (form.bmeAddrPresent)
+        if (form.bme280EnabledPresent)
         {
-            cfg.bme280.device_address = form.bmeAddr;
+            if (form.bme280Enabled)
+            {
+                cfg.deviceMgr.setFlag(app::dm::DeviceID::I2C_BME280);
+            }
+            else
+            {
+                cfg.deviceMgr.rmFlag(app::dm::DeviceID::I2C_BME280);
+            }
         }
 
-        if (form.bmeOsrsTPresent)
+        if (form.ds18b20EnabledPresent)
         {
-            cfg.bme280.osrs_t = static_cast<app::i2c::bme280::Oversampling>(form.bmeOsrsT);
+            if (form.ds18b20Enabled)
+            {
+                cfg.deviceMgr.setFlag(app::dm::DeviceID::ONEWIRE_DS18B20);
+            }
+            else
+            {
+                cfg.deviceMgr.rmFlag(app::dm::DeviceID::ONEWIRE_DS18B20);
+            }
         }
 
-        if (form.bmeOsrsPPresent)
+        if (form.tl136EnabledPresent)
         {
-            cfg.bme280.osrs_p = static_cast<app::i2c::bme280::Oversampling>(form.bmeOsrsP);
+            if (form.tl136Enabled)
+            {
+                cfg.deviceMgr.setFlag(app::dm::DeviceID::MODBUS_TL136);
+            }
+            else
+            {
+                cfg.deviceMgr.rmFlag(app::dm::DeviceID::MODBUS_TL136);
+            }
         }
 
-        if (form.bmeOsrsHPresent)
+        if (form.bme280AddrPresent)
         {
-            cfg.bme280.osrs_h = static_cast<app::i2c::bme280::Oversampling>(form.bmeOsrsH);
+            cfg.bme280.device_address = form.bme280Addr;
+        }
+
+        if (form.bme280ProbeIntervalPresent)
+        {
+            cfg.bme280.probe_interval_ms = form.bme280ProbeIntervalMs;
+        }
+
+        if (form.bme280OsrsTPresent)
+        {
+            cfg.bme280.osrs_t = static_cast<app::i2c::bme280::Oversampling>(form.bme280OsrsT);
+        }
+
+        if (form.bme280OsrsPPresent)
+        {
+            cfg.bme280.osrs_p = static_cast<app::i2c::bme280::Oversampling>(form.bme280OsrsP);
+        }
+
+        if (form.bme280OsrsHPresent)
+        {
+            cfg.bme280.osrs_h = static_cast<app::i2c::bme280::Oversampling>(form.bme280OsrsH);
+        }
+
+        if (form.ds18b20AddressPresent)
+        {
+            cfg.ds18b20.address = form.ds18b20Address;
+        }
+
+        if (form.ds18b20ProbeIntervalPresent)
+        {
+            cfg.ds18b20.probe_interval_ms = form.ds18b20ProbeIntervalMs;
+        }
+
+        if (form.tl136AiConverterAddressPresent)
+        {
+            cfg.tl136.ai_converter_address = form.tl136AiConverterAddress;
+        }
+
+        if (form.tl136AiConverterChannelPresent)
+        {
+            cfg.tl136.ai_converter_channel = form.tl136AiConverterChannel;
+        }
+
+        if (form.tl136AiConverterCalibrationPresent)
+        {
+            cfg.tl136.ai_converter_calibration = form.tl136AiConverterCalibration;
+        }
+
+        if (form.tl136ProbeIntervalPresent)
+        {
+            cfg.tl136.probe_interval_ms = form.tl136ProbeIntervalMs;
+        }
+
+        if (form.tl136FullScaleWaterLevelPresent)
+        {
+            cfg.tl136.full_scale_water_level_mm = form.tl136FullScaleWaterLevelMm;
         }
     }
 

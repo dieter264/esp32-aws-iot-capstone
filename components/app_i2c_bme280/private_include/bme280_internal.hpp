@@ -10,7 +10,7 @@
 #include "app/cmn/log.hpp"
 #include "app/cmn/time.hpp"
 #include "app/cfg/config_store.hpp"
-#include "app/i2c/bus.hpp"
+#include "app/i2c/i2c_bus.hpp"
 #include "app/i2c/bme280.hpp"
 #include "app/sm/state_machine.hpp"
 #include "app/stat/types.hpp"
@@ -37,14 +37,14 @@ namespace app::i2c::bme280
 
     struct Bme280::State
     {
-        explicit State(const app::cfg::DeviceID devID,
-                       app::cfg::ConfigStore &store,
+        explicit State(app::cfg::ConfigStore &store,
                        app::sm::StateMachine &sm,
                        app::i2c::bus::I2cBus &bus)
-            : devID_(devID), cfgStore_(store), stateMachine_(sm), i2cBus_(bus) {}
+            : cfgStore_(store), stateMachine_(sm), i2cBus_(bus) {}
 
         bool isInitialized_ = false;
-        const app::cfg::DeviceID devID_;
+        Bme280Config initialCfg_{};
+
         app::cfg::ConfigStore &cfgStore_;
         app::sm::StateMachine &stateMachine_;
         app::i2c::bus::I2cBus &i2cBus_;

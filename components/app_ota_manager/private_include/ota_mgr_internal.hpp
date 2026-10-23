@@ -48,6 +48,6 @@ namespace app::ota
         static void otaEventHandler(void *, esp_event_base_t, int32_t, void *);
         void handleOtaEvent(const char *eventBase, int32_t eventId, void *eventData);
         void startOta();
-        void setOtaStatus(OtaState, esp_err_t = ESP_OK);
+        void setOtaStatus(OtaState otaState, esp_err_t error_status = ESP_OK);
     };
 }

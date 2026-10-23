@@ -15,6 +15,7 @@ namespace app::sm
 
 namespace app::sntp
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /**
@@ -40,8 +41,10 @@ namespace app::sntp
          */
         void fini();
 
+        /** Restarts the client using the latest configuration. */
         esp_err_t reset();
 
+        /** Returns whether initialization completed successfully. */
         bool isInitialized() const;
 
     private:

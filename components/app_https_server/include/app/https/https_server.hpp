@@ -15,6 +15,7 @@ namespace app::sm
 
 namespace app::https
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /**
@@ -37,12 +38,16 @@ namespace app::https
         /** Stops the server and releases its ESP-IDF HTTP resources. */
         void fini();
 
+        /** Restarts the server using the latest configuration. */
         esp_err_t reset();
 
+        /** Returns whether the HTTPS server is running. */
         bool isInitialized() const;
 
+        /** Returns the non-owning ConfigStore dependency. */
         app::cfg::ConfigStore &getConfigStore();
 
+        /** Returns the non-owning StateMachine dependency. */
         app::sm::StateMachine &getStateMachine();
 
     private:

@@ -15,6 +15,7 @@ namespace app::sm
 
 namespace app::ota
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /**
@@ -40,8 +41,10 @@ namespace app::ota
          */
         void fini();
 
+        /** Restarts the manager using the latest configuration. */
         esp_err_t reset();
 
+        /** Returns whether initialization completed successfully. */
         bool isInitialized() const;
 
     private:

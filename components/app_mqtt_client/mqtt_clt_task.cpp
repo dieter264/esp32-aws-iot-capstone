@@ -116,6 +116,16 @@ namespace app::mqtt
             {
                 publishLatestBme280Data();
             }
+
+            if (0 != (bits & TaskWakeBit::DS18B20_DATA_READY))
+            {
+                publishLatestDs18b20Data();
+            }
+
+            if (0 != (bits & TaskWakeBit::TL136_DATA_READY))
+            {
+                publishLatestTl136Data();
+            }
         }
 
         stopAndDestroyClient();
@@ -173,6 +183,18 @@ namespace app::mqtt
         case app::sm::APP_EVENT_BME280_DATA_READY:
         {
             xEventGroupSetBits(eventGroup_, TaskWakeBit::BME280_DATA_READY);
+        }
+        break;
+
+        case app::sm::APP_EVENT_DS18B20_DATA_READY:
+        {
+            xEventGroupSetBits(eventGroup_, TaskWakeBit::DS18B20_DATA_READY);
+        }
+        break;
+
+        case app::sm::APP_EVENT_TL136_DATA_READY:
+        {
+            xEventGroupSetBits(eventGroup_, TaskWakeBit::TL136_DATA_READY);
         }
         break;
 

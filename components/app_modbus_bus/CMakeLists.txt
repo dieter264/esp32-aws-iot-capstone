@@ -1,0 +1,12 @@
+idf_component_register(
+    SRCS
+       mb_bus.cpp
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+        app_cmn
+    PRIV_REQUIRES
+        esp_driver_uart
+        esp-modbus
+        app_config_store
+)

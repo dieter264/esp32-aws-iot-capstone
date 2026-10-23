@@ -25,9 +25,9 @@ menu "SNTP Client"
             string "NTP server 1"
             default ""
             help
-                Static NTP server. 
-                Optional, if DHCP-provided NTP is enabled. In this case the server is 
-                just used as fallback server. If DHCP-provided NTP is not enabled, this 
+                Static NTP server.
+                Optional, if DHCP-provided NTP is enabled. In this case the server is
+                just used as fallback server. If DHCP-provided NTP is not enabled, this
                 server is used for the NTP service.
                 Static servers must be configured as a compact list: server 1 must be
                 set before server 2 is used.

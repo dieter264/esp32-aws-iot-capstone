@@ -20,6 +20,7 @@ namespace app::i2c::bus
 
 namespace app::i2c::bme280
 {
+    /** Applies this component's configured ESP-IDF log level. */
     void apply_log_level();
 
     /**
@@ -29,8 +30,7 @@ namespace app::i2c::bme280
     class Bme280
     {
     public:
-        Bme280(const app::cfg::DeviceID,
-               app::cfg::ConfigStore &,
+        Bme280(app::cfg::ConfigStore &,
                app::sm::StateMachine &,
                app::i2c::bus::I2cBus &);
 
@@ -48,9 +48,14 @@ namespace app::i2c::bme280
          */
         void fini();
 
+        /** Reinitializes the sensor using the latest configuration. */
         esp_err_t reset();
 
+        /** Returns whether initialization completed successfully. */
         bool isInitialized() const;
+
+        /** Returns whether the stored sensor configuration differs from the active one. */
+        bool hasConfigChanged() const;
 
     private:
         struct State;

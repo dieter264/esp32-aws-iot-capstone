@@ -1,19 +1,24 @@
-menu "Example Configuration"
+menu "Application Configuration"
 
     config APP_LOG_GLOBAL_LEVEL
         int "Global log level (0=NONE..5=VERBOSE)"
         range 0 5
         default 3
 
-    source "../components/app_config_store/Kconfig"
-    source "../components/app_https_server/Kconfig"
-    source "../components/app_i2c_bme280/Kconfig"
-    source "../components/app_i2c_bus/Kconfig"
-    source "../components/app_mqtt_client/Kconfig"
-    source "../components/app_ota_manager/Kconfig"
-    source "../components/app_resource_manager/Kconfig"
-    source "../components/app_sntp_client/Kconfig"
-    source "../components/app_state_machine/Kconfig"
-    source "../components/app_wifi_manager/Kconfig"
+    rsource "../components/app_config_store/Kconfig.app"
+    rsource "../components/app_device_manager/Kconfig.app"
+    rsource "../components/app_https_server/Kconfig.app"
+    rsource "../components/app_i2c_bme280/Kconfig.app"
+    rsource "../components/app_i2c_bus/Kconfig.app"
+    rsource "../components/app_modbus_bus/Kconfig.app"
+    rsource "../components/app_modbus_tl136/Kconfig.app"
+    rsource "../components/app_mqtt_client/Kconfig.app"
+    rsource "../components/app_onewire_bus/Kconfig.app"
+    rsource "../components/app_onewire_ds18b20/Kconfig.app"
+    rsource "../components/app_ota_manager/Kconfig.app"
+    rsource "../components/app_resource_manager/Kconfig.app"
+    rsource "../components/app_sntp_client/Kconfig.app"
+    rsource "../components/app_state_machine/Kconfig.app"
+    rsource "../components/app_wifi_manager/Kconfig.app"
 
 endmenu

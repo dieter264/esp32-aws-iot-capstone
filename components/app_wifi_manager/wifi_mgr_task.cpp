@@ -114,9 +114,9 @@ namespace app::wm
             if (lastLoggedStatusBits != statusBits)
             {
                 ESP_LOGD(TAG, "Status of WifiManger task:\n"
-                              "      timeout= %s\n"
-                              "       has IP= %s\n"
-                              "   cfg update= %s\n",
+                              "       timeout= %s\n"
+                              "        has IP= %s\n"
+                              "sta cfg update= %s\n",
                          (isTimeout) ? "true" : "false", (hasIP) ? "true" : "false",
                          (isPendingStaCfgUpdate_) ? "true" : "false");
 

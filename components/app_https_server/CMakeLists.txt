@@ -30,6 +30,7 @@ idf_component_register(
     PRIV_INCLUDE_DIRS 
         "private_include"
     PRIV_REQUIRES
+        esp-tls
         esp_https_server
         app_cmn
         app_config_store

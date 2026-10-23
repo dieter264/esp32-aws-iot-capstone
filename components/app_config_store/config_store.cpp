@@ -26,9 +26,15 @@ namespace app::cfg
     {
         if (isInitialized_) return ESP_OK;
 
-        state_->initWifiMgrApConfig();
+        state_->initWifiManagerApConfig();
         state_->initHttpsServerConfig();
         state_->initSntpClientConfig();
+        state_->initDeviceManagerConfig();
+        state_->initBme280Config();
+        state_->initOneWireBusConfig();
+        state_->initDs18b20Config();
+        state_->initModbusBusConfig();
+        state_->initTl136Config();
 
         esp_err_t ret = ESP_FAIL;
         LOGD_CALL(TAG, ret, state_->readNvs, (), "NVS read");
@@ -148,62 +154,38 @@ namespace app::cfg
         config = state_->appConfig_.sntpClt;
     }
 
-    void ConfigStore::State::initWifiMgrApConfig()
+    void ConfigStore::getDeviceManagerConfig(app::dm::DeviceManagerConfig &config) const
     {
-        auto &wmApCfg = appConfig_.wifiMgrAP;
-
-        const auto ssid_len = sizeof(CONFIG_APP_WM_AP_SSID) - 1;
-        static_assert(1 <= ssid_len && app::wm::SSID_BUF_SIZE > ssid_len);
-        cstrCopy(wmApCfg.ssid, CONFIG_APP_WM_AP_SSID);
-
-        const auto passwd_len = sizeof(CONFIG_APP_WM_AP_PASSWD) - 1;
-        static_assert(8 <= passwd_len && app::wm::PASS_BUF_SIZE > passwd_len);
-        cstrCopy(wmApCfg.password, CONFIG_APP_WM_AP_PASSWD);
-
-        appConfig_.wifiMgrAP.channel = CONFIG_APP_WM_AP_CHANNEL;
+        configASSERT(isInitialized_);
+        std::lock_guard cacheLock(state_->mutexCache_);
+        config = state_->appConfig_.deviceMgr;
     }
 
-    void ConfigStore::State::initHttpsServerConfig()
+    void ConfigStore::getOneWireBusConfig(app::onewire::bus::OneWireBusConfig &cfg) const
     {
-        auto &httpsSrvCfg = appConfig_.httpsSrv;
-
-        const auto user_len = sizeof(CONFIG_APP_HTTPS_LOGIN_USER) - 1;
-        static_assert(1 <= user_len && app::https::USER_BUF_SIZE > user_len);
-        cstrCopy(httpsSrvCfg.username, CONFIG_APP_HTTPS_LOGIN_USER);
-
-        const auto passwd_len = sizeof(CONFIG_APP_HTTPS_LOGIN_PASSWD) - 1;
-        static_assert(8 <= passwd_len && app::https::PASS_BUF_SIZE > passwd_len);
-        cstrCopy(httpsSrvCfg.password, CONFIG_APP_HTTPS_LOGIN_PASSWD);
+        configASSERT(isInitialized_);
+        std::lock_guard cacheLock(state_->mutexCache_);
+        cfg = state_->appConfig_.oneWireBus;
     }
 
-    void ConfigStore::State::initSntpClientConfig()
+    void ConfigStore::getDs18b20Config(app::onewire::ds18b20::Ds18b20Config &cfg) const
     {
-#ifdef CONFIG_APP_SNTP_ENABLED
-        auto &sntpCltCfg        = appConfig_.sntpClt;
-        sntpCltCfg.sntp_enabled = true;
+        configASSERT(isInitialized_);
+        std::lock_guard cacheLock(state_->mutexCache_);
+        cfg = state_->appConfig_.ds18b20;
+    }
 
-#ifdef CONFIG_APP_SNTP_SERVER_FROM_DHCP
-        constexpr bool SNTP_SERVER_FROM_DHCP = true;
-        sntpCltCfg.server_from_dhcp          = true;
-#else
-        constexpr bool SNTP_SERVER_FROM_DHCP = false;
-#endif
+    void ConfigStore::getModbusBusConfig(app::modbus::bus::ModbusBusConfig &cfg) const
+    {
+        configASSERT(isInitialized_);
+        std::lock_guard cacheLock(state_->mutexCache_);
+        cfg = state_->appConfig_.modbusBus;
+    }
 
-#ifdef CONFIG_APP_SNTP_STATIC_SERVER_1
-        constexpr auto s1_len       = sizeof(CONFIG_APP_SNTP_STATIC_SERVER_1) - 1;
-        constexpr bool dhcpOrStatic = (SNTP_SERVER_FROM_DHCP || 1 <= s1_len);
-        static_assert(dhcpOrStatic && app::sntp::SNTP_SERVER_NAME_SIZE > s1_len);
-        cstrCopy(sntpCltCfg.static_sntp_server[0], CONFIG_APP_SNTP_STATIC_SERVER_1);
-#else
-        static_assert(SNTP_SERVER_FROM_DHCP);
-#endif
-
-#ifdef CONFIG_APP_SNTP_STATIC_SERVER_2
-        constexpr auto s2_len = sizeof(CONFIG_APP_SNTP_STATIC_SERVER_2) - 1;
-        static_assert(app::sntp::SNTP_SERVER_NAME_SIZE > s2_len);
-        cstrCopy(sntpCltCfg.static_sntp_server[1], CONFIG_APP_SNTP_STATIC_SERVER_2);
-#endif
-
-#endif
+    void ConfigStore::getTl136Config(app::modbus::tl136::Tl136Config &cfg) const
+    {
+        configASSERT(isInitialized_);
+        std::lock_guard cacheLock(state_->mutexCache_);
+        cfg = state_->appConfig_.tl136;
     }
 }

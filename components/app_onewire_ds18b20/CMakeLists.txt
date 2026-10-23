@@ -1,0 +1,15 @@
+idf_component_register(
+    SRCS
+        "ds18b20.cpp"
+        "ds18b20_task.cpp"
+    INCLUDE_DIRS
+        "include"
+    PRIV_INCLUDE_DIRS
+        "private_include"
+    PRIV_REQUIRES
+        esp_timer
+        app_cmn
+        app_config_store
+        app_onewire_bus
+        app_state_machine
+)
