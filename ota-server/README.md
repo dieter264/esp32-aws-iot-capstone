@@ -49,7 +49,7 @@ ota-server/
 │   └── key.pem
 └── bin/
     ├── .gitkeep
-    └── firmware-<version>.bin
+    └── firmware-v0.4.bin
 ```
 
 **Note:** The certificate files and firmware binaries are generated locally and must not be committed to Git.
@@ -144,7 +144,7 @@ Save and exit, then inspect the configured partition layout:
 idf.py partition-table
 ```
 
-The output should include `factory`, `ota_0`, and `ota_1`, each with a size of 4 MiB, as defined in [partitions.csv](../partitions.csv). This command checks the local build configuration; it does not read or update the partition table on the device. See the migration notes below if the device still uses the v0.1 layout.
+The output should include `factory`, `ota_0`, and `ota_1`, each with a size of 4 MiB, as defined in [partitions.csv](../partitions.csv). This command checks the local build configuration; it does not read or update the partition table on the device. See the migration notes below if the device still uses a v0.1 or v0.3 layout.
 
 ### Build the application image
 
@@ -157,33 +157,37 @@ idf.py build
 The project build copies the application binary to a versioned OTA filename such as:
 
 ```text
-ota-server/bin/firmware-0.3.bin
+ota-server/bin/firmware-v0.4.bin
 ```
 
-The version is derived from `FIRMWARE_VERSION` in `firmware.hpp`.
+Filenames use `v` followed by `FIRMWARE_VERSION` from `firmware.hpp`.
 
 When changing `FIRMWARE_VERSION`, a normal build is sufficient. The top-level CMake file registers `firmware.hpp` as a CMake configure dependency, so the versioned OTA binary name is updated automatically.
 
-### Migrating from v0.1
+### Migrating to v0.4
 
-The application partition layout changed between the public v0.1 release and v0.3:
+Boards running v0.1 or v0.3 need a full USB flash before using the v0.4 firmware. The v0.4 layout changes these offsets, including on boards that already have 4 MiB application slots:
 
-| Application partition | v0.1 size | v0.3 size |
-|---|---|---|
-| `factory` | 2 MiB | 4 MiB |
-| `ota_0` | 2 MiB | 4 MiB |
-| `ota_1` | 2 MiB | 4 MiB |
+| Item | v0.3 | v0.4 |
+| :--- | :--- | :--- |
+| Partition table offset | 32K (`0x8000`) | 44K (`0xb000`) |
+| NVS offset | 36K (`0x9000`) | 48K (`0xc000`) |
+| NVS key partition | Absent | 4K, protected by Flash Encryption when enabled |
 
-The larger slots also change the OTA partition offsets. The current HTTPS OTA path downloads only the application image and uses the partition table already on the device. It does not install `partitions.csv` or migrate the flash layout. An application image that fits an old slot may still be usable there, but that leaves the old layout in place.
+Factory and OTA application slots remain 4 MiB, as in v0.3; v0.1 used 2 MiB slots. The HTTPS OTA path updates only the application. It cannot install the new bootloader or partition table, and a v0.4 application expects the table at its new offset. Do not use application-only OTA for this migration.
 
-To adopt the v0.3 layout, use the ESP-IDF v6.0.1 environment, complete the [device HTTPS certificate setup](../README.md#61-create-the-devices-https-certificate), and run these commands from the project root with the board connected over USB:
+Existing NVS data is not migrated to the new location. Record the device configuration before flashing and reprovision it afterwards.
+
+For a board with Secure Boot and Flash Encryption disabled, activate ESP-IDF v6.1, complete the [device HTTPS certificate setup](../README.md#61-create-the-devices-https-certificate), and run these commands from the project root with the board connected over USB:
 
 ```bash
 idf.py build
 idf.py flash monitor
 ```
 
-This flashes the bootloader, partition table, initial OTA data, and application. Once the device has the v0.3 layout, use the application-only OTA workflow below for subsequent updates that keep the same layout.
+This flashes the bootloader, partition table, initial OTA data, and application. To provision hardware security instead, follow [ESP32-S3 Hardware Security](../docs/ESP32-S3_HARDWARE_SECURITY.md) from a fresh, flash-erased board.
+
+Once the device has the v0.4 layout, use the application-only OTA workflow below for subsequent updates that keep the same layout.
 
 Example workflow:
 
@@ -192,7 +196,7 @@ Example workflow:
 2. Build and flash version A.
 3. Set FIRMWARE_VERSION to version B.
 4. Run idf.py build.
-5. Use ota-server/bin/firmware-B.bin for the OTA test.
+5. Use ota-server/bin/firmware-vB.bin for the OTA test.
 ```
 
 ## 6. Start HTTPS OTA server
@@ -230,19 +234,19 @@ ss -lntp | grep 8443
 The OTA URL has this form:
 
 ```text
-https://<OTA_SERVER_IP>:8443/bin/firmware-<version>.bin
+https://<OTA_SERVER_IP>:8443/bin/firmware-v0.4.bin
 ```
 
 Example:
 
 ```text
-https://192.168.178.68:8443/bin/firmware-0.3.bin
+https://192.168.178.68:8443/bin/firmware-v0.4.bin
 ```
 
 From another terminal on the development machine or VM, verify that the file is served:
 
 ```bash
-curl -f -k https://192.168.178.68:8443/bin/firmware-0.3.bin -o /dev/null
+curl -f -k https://192.168.178.68:8443/bin/firmware-v0.4.bin -o /dev/null
 ```
 
 Expect a successful transfer with curl exit status zero. The transferred size depends on the built image. The `-f` option makes HTTP errors, such as a missing binary, fail the check.
@@ -262,13 +266,13 @@ The general access procedure for the ESP32 configuration page is described in th
 Use:
 
 ```text
-https://<OTA_SERVER_IP>:8443/bin/firmware-<version>.bin
+https://<OTA_SERVER_IP>:8443/bin/firmware-v0.4.bin
 ```
 
 Example:
 
 ```text
-https://192.168.178.68:8443/bin/firmware-0.3.bin
+https://192.168.178.68:8443/bin/firmware-v0.4.bin
 ```
 
 The OTA server IP must match the `subjectAltName` in the generated server certificate.
@@ -282,7 +286,7 @@ subjectAltName = IP:192.168.178.68
 then the OTA URL must use:
 
 ```text
-https://192.168.178.68:8443/bin/firmware-0.3.bin
+https://192.168.178.68:8443/bin/firmware-v0.4.bin
 ```
 
 Using another IP address or a hostname will cause TLS server certificate verification to fail.
@@ -391,7 +395,7 @@ Useful checks:
 
 ```bash
 ss -lntp | grep 8443
-curl -f -k https://<OTA_SERVER_IP>:8443/bin/firmware-<version>.bin -o /dev/null
+curl -f -k https://<OTA_SERVER_IP>:8443/bin/firmware-v0.4.bin -o /dev/null
 ```
 
 ### TLS certificate verification fails
@@ -405,7 +409,7 @@ The OTA URL does not match the certificate subjectAltName.
 Example:
 
 ```text
-OTA URL: https://192.168.178.68:8443/bin/firmware-0.3.bin
+OTA URL: https://192.168.178.68:8443/bin/firmware-v0.4.bin
 Certificate: subjectAltName = IP:192.168.178.68
 ```
 

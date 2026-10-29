@@ -228,7 +228,7 @@ development log level
 application-wide log-level control
 ```
 
-Before configuring the target or running the setup flow below, activate the ESP-IDF v6.0.1 environment and [create the device's HTTPS certificate and key](#61-create-the-devices-https-certificate). CMake requires those files even when setting the target for the first time.
+Before configuring the target or running the setup flow below, activate the ESP-IDF v6.1 environment and [create the device's HTTPS certificate and key](#61-create-the-devices-https-certificate). CMake requires those files even when setting the target for the first time.
 
 The project expects the ESP-IDF target to be configured as:
 
@@ -266,7 +266,7 @@ Project-specific `menuconfig` options provide component log-level overrides, ini
 
 ## 6. Build and flash
 
-The project uses ESP-IDF v6.0.1 and targets ESP32-S3.
+The project uses ESP-IDF v6.1 and targets ESP32-S3.
 
 ### 6.1 Create the device's HTTPS certificate
 
@@ -288,6 +288,8 @@ The certificate is self-signed, so the browser will still require you to accept 
 
 ### 6.2 Build and flash
 
+The standard workflow below assumes Secure Boot and Flash Encryption are disabled. To enable Secure Boot v2, Release-mode Flash Encryption, and NVS Encryption, follow [ESP32-S3 Hardware Security](./docs/ESP32-S3_HARDWARE_SECURITY.md) before flashing. The same partition table supports both SDK configurations.
+
 Typical build command from the project root:
 
 ```bash
@@ -297,8 +299,10 @@ idf.py build
 In addition to the normal build output, the completed build copies the application image to:
 
 ```text
-build/firmware-0.3.bin
+build/firmware-v0.4.bin
 ```
+
+Filenames use `v` followed by `FIRMWARE_VERSION` from [firmware.hpp](./components/app_cmn/include/app/cfg/firmware.hpp).
 
 If `ota-server/bin/` exists, the same versioned image is copied there for OTA testing.
 
@@ -308,7 +312,7 @@ Typical flash and monitor command:
 idf.py flash monitor
 ```
 
-The v0.3 partition table uses 4 MiB factory and OTA application slots, increased from 2 MiB in v0.1. Devices with the v0.1 layout need a full USB flash to adopt the new partition table; an application-only OTA update does not change it. See the [OTA migration notes](./ota-server/README.md#migrating-from-v01).
+The partition table uses 4 MiB factory and OTA application slots. Devices running v0.1 or v0.3 need a full USB flash to adopt the v0.4 layout: the partition table and NVS offsets changed, even for boards already using 4 MiB application slots. An application-only OTA update cannot perform this migration. Record existing configuration before flashing and reprovision it afterwards; see the [OTA migration notes](./ota-server/README.md#migrating-to-v04). For hardware security provisioning, follow the security guide from a fresh, flash-erased board.
 
 Firmware metadata is embedded into the application and displayed on the HTTPS status/configuration page.
 
@@ -396,7 +400,7 @@ trigger and verify an OTA update
 
 ## 10. Current project status
 
-The firmware feature implementation is complete for version 0.3.
+The current firmware includes optional Secure Boot v2, Release-mode Flash Encryption, and Flash Encryption-based NVS key protection. SDK configuration selects the unsecured or secured workflow described in [ESP32-S3 Hardware Security](./docs/ESP32-S3_HARDWARE_SECURITY.md).
 
 Verified so far:
 
@@ -417,6 +421,10 @@ MQTT safe failure with invalid CA certificate
 HTTPS OTA update using local OpenSSL server
 firmware metadata display
 versioned firmware binary generation
+Secure Boot v2 and Release-mode Flash Encryption provisioning
+encrypted NVS using a flash-protected key partition
+signed OTA image and host-encrypted factory image generation
+VS Code Full Clean -> Build Project -> Execute Custom Task -> Monitor Device
 ```
 
 ## 11. Known limitations
@@ -433,5 +441,8 @@ no MQTT username/password support
 no direct AWS IoT Core connectivity
 no MQTT client-certificate or private-key authentication
 OTA test setup uses a local development HTTPS server
-security hardening is intentionally limited to the capstone scope
 ```
+
+Hardware security is opt-in; `sdkconfig.defaults` does not enable it. Once activated, security eFuses cannot be reset by changing SDK settings. JTAG debugging is disabled on the secured board, and later serial updates require the retained host key and a pre-encrypted image.
+
+The custom serial task updates the factory application; it does not change an OTA-selected boot partition. Secure Download Mode does not authenticate the operator, so physical access can still permit destructive flash writes. Secure Boot does not by itself prevent rollback to older signed firmware, and neither Secure Boot nor Flash Encryption identifies a substituted board to the browser; see [HTTPS Server Identity](./docs/HTTPS_SERVER_IDENTITY.md).

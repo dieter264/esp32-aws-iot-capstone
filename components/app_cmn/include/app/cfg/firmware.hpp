@@ -5,7 +5,7 @@
 namespace app::cfg
 {
     /** Semantic firmware version reported by the application. */
-    inline constexpr const char *FIRMWARE_VERSION    = "0.3";
+    inline constexpr const char *FIRMWARE_VERSION    = "0.4";
     /** Compiler-provided build date. */
     inline constexpr const char *BUILD_DATE          = __DATE__;
     /** Compiler-provided build time. */

@@ -87,3 +87,4 @@ mqtt-broker/certs/*.crt
 mqtt-broker/certs/*.csr
 mqtt-broker/certs/*.srl
 mqtt-broker/certs/*.ext
+security/
